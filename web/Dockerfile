@@ -23,7 +23,6 @@ RUN --mount=type=cache,target=/var/cache/apk \
         update-ca-certificates
 
 COPY --from=build /bin/server /bin/
-RUN setcap cap_net_raw+ep /bin/server
 
 ARG UID=10001
 RUN adduser \
