@@ -1,20 +1,13 @@
 package dto
 
-type UserRegisterOutput struct {
-	Body UserRegisterResponse
-}
-
 type UserReturn struct {
-	ID        int64  `json:"id" example:"687627953"`          // Telegram ID
-	Username  string `json:"username" example:"warl0rdd"`     // Telegram username
-	Firstname string `json:"first_name" example:"Linuxfight"` // Telegram first name
-	Lastname  string `json:"last_name" example:"Olukhovich"`  // Telegram last name
-	PhotoUrl  string `json:"photo_url"`                       // Telegram photo URL
-}
-
-type UserRegisterResponse struct {
-	User UserReturn `json:"user"` // User object
-	// Tokens AuthTokens `json:"tokens"` // Two JWT tokens: Access token and Refresh token
+	ID              int64  `json:"id" example:"687627953"`          // Telegram ID
+	FirstName       string `json:"first_name" example:"Linuxfight"` // Telegram first name
+	LastName        string `json:"last_name" example:"Olukhovich"`  // Telegram last name
+	Username        string `json:"username" example:"warl0rdd"`     // Telegram username
+	LanguageCode    string `json:"language_code"`
+	AllowsWriteToPm bool   `json:"allows_write_to_pm"`
+	PhotoUrl        string `json:"photo_url"` // Telegram photo URL
 }
 
 type UserLoginInput struct {

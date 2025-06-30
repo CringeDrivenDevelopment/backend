@@ -2,8 +2,8 @@ package service
 
 import (
 	"backend/internal/adapters/repository"
-	"backend/internal/domain/common/errorz"
 	"context"
+	"errors"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -25,7 +25,7 @@ func (s *UserService) Create(ctx context.Context, params repository.CreateUserPa
 	queries := repository.New(tx)
 
 	if _, err := queries.GetUserById(ctx, params.ID); err == nil {
-		return errorz.UserAlreadyExists
+		return errors.New("user already exists")
 	}
 
 	if err := queries.CreateUser(ctx, params); err != nil {
@@ -36,7 +36,7 @@ func (s *UserService) Create(ctx context.Context, params repository.CreateUserPa
 		return err
 	}
 
-	return nil
+	return tx.Commit(ctx)
 }
 
 func (s *UserService) GetByID(ctx context.Context, id int64) (repository.User, error) {

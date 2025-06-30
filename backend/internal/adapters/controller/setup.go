@@ -1,4 +1,4 @@
-package api
+package controller
 
 import (
 	"backend/cmd/app"
@@ -13,6 +13,7 @@ func Setup(app *app.App) {
 	app.Server.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins: []string{"*"},
 	}))
+	// TODO: change origin to strict mode
 
 	// log all requests
 	// TODO: to zap logger
@@ -40,6 +41,10 @@ func Setup(app *app.App) {
 	// middlewareHandler := middlewares.NewMiddlewareHandler(app)
 	//
 	// Setup user routes
-	userHandler := NewUserHandler(app)
-	userHandler.Setup(app.Router)
+	newUserHandler(app).Setup(app.Router)
+
+	newTracksHandler(app).Setup(app.Router)
+	// TODO: add middleware
+
+	newPlaylistsHandler(app).Setup(app.Router)
 }

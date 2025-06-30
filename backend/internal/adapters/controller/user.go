@@ -1,39 +1,39 @@
-package api
+package controller
 
 import (
 	"backend/cmd/app"
-	"backend/internal/adapters/controller/api/validator"
+	"backend/internal/adapters/controller/validator"
 	"backend/internal/adapters/repository"
 	"backend/internal/domain/dto"
 	"backend/internal/domain/service"
 	"backend/internal/domain/utils"
 	"context"
+	"fmt"
 	"github.com/danielgtaylor/huma/v2"
 	"net/http"
 	"time"
 )
 
-type UserHandler struct {
+type userHandler struct {
 	userService  *service.UserService
 	tokenService *service.TokenService
 	validator    *validator.Validator
 }
 
-func NewUserHandler(app *app.App) *UserHandler {
+func newUserHandler(app *app.App) *userHandler {
 	userService := service.NewUserService(app.DB)
-	tokenService := service.NewTokenService(app.JwtSecret, time.Hour)
+	tokenService := service.NewTokenService(app.Settings.JwtSecret, time.Hour)
 
-	return &UserHandler{
+	return &userHandler{
 		userService:  userService,
 		tokenService: tokenService,
 		validator:    app.Validator,
 	}
 }
 
-// @Accept       json
-// @Produce      json
-// @Param        body body  dto.UserLogin true  "User login body object"
-func (h UserHandler) login(ctx context.Context, input *dto.UserLoginInput) (*dto.TokenOutput, error) {
+func (h *userHandler) login(ctx context.Context, input *dto.UserLoginInput) (*struct {
+	Body dto.Token
+}, error) {
 	userDTO := input.Body
 
 	if errValidate := h.validator.ValidateData(userDTO); errValidate != nil {
@@ -48,9 +48,15 @@ func (h UserHandler) login(ctx context.Context, input *dto.UserLoginInput) (*dto
 	_, errFetch := h.userService.GetByID(ctx, telegramData.ID)
 	if errFetch != nil {
 		var createErr error
+
+		name := telegramData.Username
+		if name == "" {
+			name = fmt.Sprintf("user%d", telegramData.ID)
+		}
+
 		createErr = h.userService.Create(ctx, repository.CreateUserParams{
 			ID:   telegramData.ID,
-			Name: "default username", // TODO: Change in PROD to real user data
+			Name: name,
 		})
 
 		if createErr != nil {
@@ -63,14 +69,10 @@ func (h UserHandler) login(ctx context.Context, input *dto.UserLoginInput) (*dto
 		return nil, huma.Error500InternalServerError("failed to generate auth token")
 	}
 
-	resp := &dto.TokenOutput{
-		Body: dto.Token{Token: token},
-	}
-
-	return resp, nil
+	return &struct{ Body dto.Token }{Body: dto.Token{Token: token}}, nil
 }
 
-func (h UserHandler) Setup(router huma.API) {
+func (h *userHandler) Setup(router huma.API) {
 	huma.Register(router, huma.Operation{
 		OperationID: "login",
 		Path:        "/api/user/login",
@@ -82,7 +84,7 @@ func (h UserHandler) Setup(router huma.API) {
 		Tags: []string{
 			"user",
 		},
-		Summary:     "Login to existing user account",
-		Description: "Login to existing user account using his email, username and password. Returns his ID, email, username, verifiedEmail boolean variable and role",
+		Summary:     "Login",
+		Description: "Login to app with telegram webapp init data. Returns his token",
 	}, h.login)
 }

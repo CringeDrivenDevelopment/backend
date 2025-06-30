@@ -17,6 +17,10 @@ jobs:
       contents: write
       packages: write
 
+    strategy:
+      matrix:
+        project: ["backend", "backend-bot"]
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -35,13 +39,14 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.project }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
-          context: backend/
+          context: ${{ matrix.project }}
           push: true
+          platforms: linux/arm64,linux/amd64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha

@@ -22,7 +22,7 @@ func main() {
 		gotgproto.ClientTypeBot("teeeeegeeeetokeeeen"),
 		// Optional parameters of client
 		&gotgproto.ClientOpts{
-			Session: sessionMaker.SqlSession(sqlite.Open("echobot.db")),
+			Session: sessionMaker.SqlSession(sqlite.Open("bot.db")),
 		},
 	)
 	if err != nil {
@@ -44,8 +44,8 @@ func main() {
 func setMenuButton(client *gotgproto.Client) {
 	// Create mini-app button with query parameters
 	button := &tg.BotMenuButton{
-		Text: "Open Mini-App",
-		URL:  "https://your-mini-app-domain.com/path?param1=value1&param2=value2",
+		Text: "Открыть MiniApp",
+		URL:  "https://lxft.tech",
 	}
 
 	// Set as bot's menu button
@@ -61,18 +61,18 @@ func startHandler(ctx *ext.Context, update *ext.Update) error {
 	msg := update.EffectiveMessage
 
 	// Build URL with query parameters
-	webAppURL := "https://your-miniapp.com?user_id=123&action=start"
+	webAppURL := "https://lxft.tech"
 
 	// Create inline keyboard
 	btn := tg.KeyboardButtonWebView{
-		Text: "Launch Mini-App",
+		Text: "Открыть MiniApp",
 		URL:  webAppURL,
 	}
 	row := tg.KeyboardButtonRow{Buttons: []tg.KeyboardButtonClass{&btn}}
 	markup := tg.ReplyInlineMarkup{Rows: []tg.KeyboardButtonRow{row}}
 
 	// Send message with button
-	_, err := ctx.Reply(update, ext.ReplyTextString("Welcome! Click below:"), &ext.ReplyOpts{
+	_, err := ctx.Reply(update, ext.ReplyTextString("Привет! Чтобы начать работу, кликни ниже:"), &ext.ReplyOpts{
 		NoWebpage:        false,
 		Markup:           &markup,
 		ReplyToMessageId: msg.ID,

@@ -1,18 +1,17 @@
 package app
 
 import (
-	"backend/internal/adapters/controller/api/validator"
+	"backend/internal/adapters/config"
+	"backend/internal/adapters/controller/validator"
 	"backend/internal/domain/utils"
 	"context"
-	"errors"
-	"fmt"
-	"github.com/ilyakaznacheev/cleanenv"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"go.uber.org/zap"
-
+	"github.com/bytedance/sonic"
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humaecho"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
+	"go.uber.org/zap"
+	"io"
 )
 
 // App is a struct that contains the fiber app, database connection, listen port, validator, logging boolean etc.
@@ -22,43 +21,39 @@ type App struct {
 	DB        *pgxpool.Pool
 	Validator *validator.Validator
 	Logger    *zap.Logger
-	JwtSecret string
+
+	Settings *config.Settings
 }
 
-type config struct {
-	// DbUrl - Postgres Database connection string
-	// Example - "postgres://username:password@localhost:5432/database_name"
-	DbUrl     string
-	JwtSecret string `env:"JWT_SECRET"`
-	BotToken  string `env:"BOT_TOKEN"`
-
-	DbHost     string `env:"POSTGRES_HOST" env-default:"localhost"`
-	DbPort     string `env:"POSTGRES_PORT" env-default:"5432"`
-	DbPassword string `env:"POSTGRES_PASSWORD" env-default:"password"`
-	DbUser     string `env:"POSTGRES_USER" env-default:"user"`
-	DbName     string `env:"POSTGRES_DB" env-default:"db"`
+func sonicFormat() huma.Format {
+	return huma.Format{
+		Marshal: func(w io.Writer, v any) error {
+			data, err := sonic.Marshal(v)
+			if err != nil {
+				return err
+			}
+			_, err = w.Write(data)
+			return err
+		},
+		Unmarshal: sonic.Unmarshal,
+	}
 }
 
 // New is a function that creates a new app struct
 func New(logger *zap.Logger) (*App, error) {
-	var cfg config
-	if err := cleanenv.ReadEnv(&cfg); err != nil {
+	cfg, err := config.New()
+	if err != nil {
 		return nil, err
 	}
 
-	cfg.DbUrl = fmt.Sprintf("postgres://%s:%s@%s:%s/%s", cfg.DbUser, cfg.DbPassword, cfg.DbHost, cfg.DbPort, cfg.DbName)
-	logger.Info("connecting to db: " + cfg.DbUrl)
-
-	if cfg.JwtSecret == "" {
-		return nil, errors.New("JwtSecret is REQUIRED not to be null")
-	}
-
-	if cfg.BotToken == "" {
-		return nil, errors.New("BotToken is REQUIRED not to be null")
-	}
+	logger.Info("dbconn: " + cfg.DbUrl)
 
 	apiCfg := huma.DefaultConfig("backend", "v1.0.0")
 	apiCfg.SchemasPath = "/docs#/schemas"
+	apiCfg.Formats = map[string]huma.Format{
+		"json":             sonicFormat(),
+		"application/json": sonicFormat(),
+	}
 	apiCfg.OpenAPI.Servers = []*huma.Server{
 		{
 			URL:         "http://localhost:8080",
@@ -90,6 +85,7 @@ func New(logger *zap.Logger) (*App, error) {
 		DB:        conn,
 		Validator: requestValidator,
 		Logger:    logger,
+		Settings:  cfg,
 	}, nil
 }
 

@@ -4,6 +4,10 @@ updates:
     directory: "/backend"
     schedule:
       interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/backend-bot"
+    schedule:
+      interval: "weekly"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

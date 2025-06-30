@@ -2,7 +2,6 @@ package service
 
 import (
 	"backend/internal/adapters/repository"
-	"backend/internal/domain/common/errorz"
 	"context"
 	"errors"
 	"github.com/golang-jwt/jwt/v5"
@@ -23,7 +22,7 @@ func NewTokenService(secret string, expires time.Duration) *TokenService {
 func (s *TokenService) verifyToken(authHeader string) (int64, error) {
 	tokenStr := strings.TrimSpace(strings.TrimPrefix(authHeader, "Bearer "))
 	if tokenStr == "" {
-		return 0, errorz.AuthHeaderIsEmpty
+		return 0, errors.New("auth header is empty")
 	}
 
 	token, err := jwt.Parse(tokenStr, func(_ *jwt.Token) (interface{}, error) {

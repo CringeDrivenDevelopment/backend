@@ -1,9 +1,9 @@
 package utils
 
 import (
-	"backend/internal/domain/common/errorz"
 	"backend/internal/domain/dto"
 	"encoding/json"
+	"errors"
 	"net/url"
 )
 
@@ -17,7 +17,7 @@ func ParseInitData(initDataRaw string) (*dto.UserReturn, error) {
 	initDataUser := initDataValues.Get("user")
 
 	if initDataUser == "" {
-		return nil, errorz.TelegramUserEmpty
+		return nil, errors.New("telegram user empty")
 	}
 
 	user := dto.UserReturn{}

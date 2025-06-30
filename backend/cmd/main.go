@@ -2,7 +2,7 @@ package main
 
 import (
 	"backend/cmd/app"
-	"backend/internal/adapters/controller/api"
+	"backend/internal/adapters/controller"
 	"go.uber.org/zap"
 )
 
@@ -25,7 +25,7 @@ func main() {
 
 	logger.Info("app initialized")
 
-	api.Setup(mainApp)
+	controller.Setup(mainApp)
 
 	logger.Info("endpoints mapped")
 	err = mainApp.Start()
