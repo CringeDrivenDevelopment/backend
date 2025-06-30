@@ -19,7 +19,8 @@ jobs:
 
     strategy:
       matrix:
-        project: ["backend", "backend-bot"]
+        # project: ["backend", "backend-bot" ...]
+        project: ["backend"]
 
     steps:
       - name: Checkout repository
