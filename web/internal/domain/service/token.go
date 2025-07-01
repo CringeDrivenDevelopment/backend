@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"github.com/golang-jwt/jwt/v5"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -42,9 +43,14 @@ func (s *TokenService) verifyToken(authHeader string) (int64, error) {
 		return 0, errors.New("invalid token claims")
 	}
 
-	userID, ok := claims["sub"].(int64)
+	userIDstr, ok := claims["sub"].(string)
 	if !ok {
 		return 0, errors.New("invalid token sub")
+	}
+
+	userID, err := strconv.ParseInt(userIDstr, 10, 64)
+	if err != nil {
+		return 0, errors.New("invalid user id")
 	}
 
 	return userID, nil
@@ -53,7 +59,7 @@ func (s *TokenService) verifyToken(authHeader string) (int64, error) {
 // GenerateToken is a method to generate a new auth token.
 func (s *TokenService) GenerateToken(userID int64) (string, error) {
 	claims := jwt.MapClaims{
-		"sub": userID,
+		"sub": strconv.FormatInt(userID, 10),
 		"iat": time.Now().Unix(),
 		"exp": time.Now().Add(s.expires).Unix(),
 	}

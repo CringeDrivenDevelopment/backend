@@ -1,11 +1,11 @@
 package dto
 
 type Playlist struct {
-	Id            string
-	Title         string
-	Thumbnail     string
-	Length        int
-	Tracks        *[]Track
-	AllowedLength int
-	AllowedTracks *[]Track
+	Id            string   `json:"id"`
+	Title         string   `json:"title"`
+	Thumbnail     string   `json:"thumbnail"`
+	Length        int      `json:"length"`
+	Tracks        *[]Track `json:"tracks"`
+	AllowedLength int      `json:"allowed_length"`
+	AllowedTracks *[]Track `json:"allowed_tracks"`
 }

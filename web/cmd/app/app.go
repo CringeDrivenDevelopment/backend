@@ -56,10 +56,7 @@ func New(logger *zap.Logger) (*App, error) {
 	}
 	apiCfg.Components.SecuritySchemes = map[string]*huma.SecurityScheme{
 		"jwt": {
-			Name:         "jwt",
-			Description:  "JWT Token",
-			Type:         "apiKey",
-			In:           "header",
+			Type:         "http",
 			BearerFormat: "JWT",
 			Scheme:       "Bearer",
 		},
