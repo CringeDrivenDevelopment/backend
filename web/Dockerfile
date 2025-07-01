@@ -1,29 +1,26 @@
 ARG GO_VERSION=1.24
-FROM golang:${GO_VERSION} AS build
+FROM --platform=$BUILDPLATFORM golang:${GO_VERSION} AS build
 WORKDIR /src
 
-COPY . .
-RUN go mod download -x && go mod verify
+RUN --mount=type=cache,target=/go/pkg/mod/ \
+    --mount=type=bind,source=go.mod,target=go.mod \
+    go mod download -x
 
-# RUN apk update && apk add ca-certificates git gcc g++ libc-dev binutils
+ARG TARGETARCH
 
 RUN --mount=type=cache,target=/go/pkg/mod/ \
     --mount=type=bind,target=. \
-    # CGO_ENABLED=0 \
-    go build -o /bin/server ./cmd/main.go
+    CGO_ENABLED=0 GOARCH=$TARGETARCH go build -o /bin/server ./cmd/main.go
 
 FROM alpine:latest AS final
 
 RUN --mount=type=cache,target=/var/cache/apk \
     apk --update add \
-        curl \
         ca-certificates \
         tzdata \
-        libcap-setcap \
+        curl \
         && \
         update-ca-certificates
-
-COPY --from=build /bin/server /bin/
 
 ARG UID=10001
 RUN adduser \
@@ -35,6 +32,8 @@ RUN adduser \
     --uid "${UID}" \
     appuser
 USER appuser
+
+COPY --from=build /bin/server /bin/
 
 EXPOSE 8080
 
