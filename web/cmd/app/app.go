@@ -57,15 +57,12 @@ func New(logger *zap.Logger) (*App, error) {
 	apiCfg.OpenAPI.Servers = []*huma.Server{
 		{
 			URL:         "http://localhost:8080",
-			Description: "local dev server",
+			Description: "dev",
 		},
-		// TODO: enable in PROD
-		/*
-			{
-				URL:         "https://back.lxft.tech",
-				Description: "PROD",
-			},
-		*/
+		{
+			URL:         "https://cloud.lxft.tech",
+			Description: "PROD",
+		},
 	}
 	router := echo.New()
 	router.HideBanner = true
