@@ -15,7 +15,7 @@ type tracksHandler struct {
 
 func newTracksHandler(app *app.App) *tracksHandler {
 	return &tracksHandler{
-		youtube: service.NewYoutubeService(app.DB, app.Settings),
+		youtube: service.NewYoutubeService(app),
 	}
 }
 

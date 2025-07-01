@@ -1,7 +1,7 @@
 package service
 
 import (
-	"backend/internal/adapters/config"
+	"backend/cmd/app"
 	"backend/internal/adapters/repository"
 	"backend/internal/domain/dto"
 	"context"
@@ -23,12 +23,12 @@ type YoutubeService struct {
 	authToken string
 }
 
-func NewYoutubeService(pool *pgxpool.Pool, cfg *config.Settings) *YoutubeService {
+func NewYoutubeService(app *app.App) *YoutubeService {
 	return &YoutubeService{
 		client:    &http.Client{},
-		pool:      pool,
-		baseUrl:   cfg.YoutubeUrl,
-		authToken: cfg.YoutubeToken,
+		pool:      app.DB,
+		baseUrl:   app.Settings.YoutubeUrl,
+		authToken: app.Settings.YoutubeToken,
 	}
 }
 
