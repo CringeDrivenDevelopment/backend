@@ -51,5 +51,10 @@ func (h *tracksHandler) Setup(router huma.API, auth func(ctx huma.Context, next 
 		Summary:     "Search",
 		Description: "Find tracks by query, limit by 5",
 		Middlewares: huma.Middlewares{auth},
+		Security: []map[string][]string{
+			{
+				"jwt": []string{},
+			},
+		},
 	}, h.search)
 }

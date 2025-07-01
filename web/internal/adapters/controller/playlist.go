@@ -46,5 +46,10 @@ func (h *playlistHandler) Setup(router huma.API, auth func(ctx huma.Context, nex
 		Summary:     "Create new playlist",
 		Description: "TODO: Change",
 		Middlewares: huma.Middlewares{auth},
+		Security: []map[string][]string{
+			{
+				"jwt": []string{},
+			},
+		},
 	}, h.create)
 }
