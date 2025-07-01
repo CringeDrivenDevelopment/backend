@@ -2,6 +2,7 @@ package controller
 
 import (
 	"backend/cmd/app"
+	"backend/internal/adapters/controller/middlewares"
 	"backend/internal/domain/dto"
 	"context"
 	"github.com/danielgtaylor/huma/v2"
@@ -11,7 +12,7 @@ import (
 
 func Setup(app *app.App) {
 	app.Server.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins: []string{"localhost", "cloud.lxft.tech", "lxft.tech"},
+		AllowOrigins: []string{"localhost", "cloud.lxft.tech", "lxft.tech", "tg-mini-app.local"},
 	}))
 	// TODO: change origin to strict mode
 
@@ -38,13 +39,12 @@ func Setup(app *app.App) {
 		return resp, nil
 	})
 
-	// middlewareHandler := middlewares.NewMiddlewareHandler(app)
+	middlewareHandler := middlewares.NewMiddlewareHandler(app)
 	//
 	// Setup user routes
 	newUserHandler(app).Setup(app.Router)
 
-	newTracksHandler(app).Setup(app.Router)
-	// TODO: add middleware
+	newTracksHandler(app).Setup(app.Router, middlewareHandler.IsAuthenticated)
 
-	newPlaylistsHandler(app).Setup(app.Router)
+	newPlaylistsHandler(app).Setup(app.Router, middlewareHandler.IsAuthenticated)
 }

@@ -36,7 +36,7 @@ func (h *tracksHandler) search(ctx context.Context, input *dto.SearchInput) (*st
 	return &struct{ Body []dto.Track }{Body: search}, nil
 }
 
-func (h *tracksHandler) Setup(router huma.API) {
+func (h *tracksHandler) Setup(router huma.API, auth func(ctx huma.Context, next func(ctx huma.Context))) {
 	huma.Register(router, huma.Operation{
 		OperationID: "tracks-search",
 		Path:        "/api/tracks",
@@ -50,5 +50,6 @@ func (h *tracksHandler) Setup(router huma.API) {
 		},
 		Summary:     "Search",
 		Description: "Find tracks by query, limit by 5",
+		Middlewares: huma.Middlewares{auth},
 	}, h.search)
 }

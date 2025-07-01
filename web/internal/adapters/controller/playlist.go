@@ -31,7 +31,7 @@ func (h *playlistHandler) create(ctx context.Context, input *struct {
 	return &struct{ Body dto.Playlist }{Body: resp}, nil
 }
 
-func (h *playlistHandler) Setup(router huma.API) {
+func (h *playlistHandler) Setup(router huma.API, auth func(ctx huma.Context, next func(ctx huma.Context))) {
 	huma.Register(router, huma.Operation{
 		OperationID: "create-playlist",
 		Path:        "/api/playlist/new",
@@ -45,5 +45,6 @@ func (h *playlistHandler) Setup(router huma.API) {
 		},
 		Summary:     "Create new playlist",
 		Description: "TODO: Change",
+		Middlewares: huma.Middlewares{auth},
 	}, h.create)
 }

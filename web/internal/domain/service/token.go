@@ -29,8 +29,12 @@ func (s *TokenService) verifyToken(authHeader string) (int64, error) {
 		return []byte(s.secret), nil
 	})
 
-	if err != nil || !token.Valid {
+	if err != nil {
 		return 0, err
+	}
+
+	if !token.Valid || token.Method != jwt.SigningMethodHS256 {
+		return 0, errors.New("invalid token")
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)

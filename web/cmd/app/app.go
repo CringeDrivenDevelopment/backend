@@ -54,14 +54,24 @@ func New(logger *zap.Logger) (*App, error) {
 		"json":             sonicFormat(),
 		"application/json": sonicFormat(),
 	}
-	apiCfg.OpenAPI.Servers = []*huma.Server{
-		{
-			URL:         "http://localhost:8080",
-			Description: "dev",
+	apiCfg.Components.SecuritySchemes = map[string]*huma.SecurityScheme{
+		"jwt": {
+			Name:         "jwt",
+			Description:  "JWT Token",
+			Type:         "apiKey",
+			In:           "header",
+			BearerFormat: "JWT",
+			Scheme:       "Bearer",
 		},
+	}
+	apiCfg.OpenAPI.Servers = []*huma.Server{
 		{
 			URL:         "https://cloud.lxft.tech",
 			Description: "PROD",
+		},
+		{
+			URL:         "http://localhost:8080",
+			Description: "dev",
 		},
 	}
 	router := echo.New()
