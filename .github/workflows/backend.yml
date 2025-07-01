@@ -20,7 +20,7 @@ jobs:
     strategy:
       matrix:
         # project: ["backend", "backend-bot" ...]
-        project: ["web"]
+        project: ["web"] # only run on changes to dir
 
     steps:
       - name: Checkout repository
