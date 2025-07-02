@@ -61,7 +61,7 @@ func New(logger *zap.Logger) (*App, error) {
 			Scheme:       "Bearer",
 		},
 	}
-	apiCfg.OpenAPI.Servers = append(apiCfg.Servers, &huma.Server{
+	apiCfg.Servers = append(apiCfg.Servers, &huma.Server{
 		URL:         "https://cloud.lxft.tech",
 		Description: "PROD",
 	}, &huma.Server{
