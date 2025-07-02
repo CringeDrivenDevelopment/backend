@@ -21,7 +21,7 @@ type Playlist struct {
 type PlaylistPermission struct {
 	PlaylistID string
 	UserID     int64
-	Role       interface{}
+	Role       string
 }
 
 type Track struct {

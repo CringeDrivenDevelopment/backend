@@ -56,7 +56,7 @@ VALUES ($1, $2, $3)
 type CreateRoleParams struct {
 	PlaylistID string
 	UserID     int64
-	Role       interface{}
+	Role       string
 }
 
 // TRACKS CRUD END
@@ -185,7 +185,7 @@ WHERE playlist_id = $1 AND user_id = $2
 type EditRoleParams struct {
 	PlaylistID string
 	UserID     int64
-	Role       interface{}
+	Role       string
 }
 
 func (q *Queries) EditRole(ctx context.Context, arg EditRoleParams) error {
@@ -208,12 +208,34 @@ func (q *Queries) EditUser(ctx context.Context, arg EditUserParams) error {
 }
 
 const getPlaylistById = `-- name: GetPlaylistById :one
-SELECT id, title, thumbnail, tracks, allowed_tracks, length, allowed_length FROM playlists WHERE id = $1
+SELECT
+    pl.id, pl.title, pl.thumbnail, pl.tracks, pl.allowed_tracks, pl.length, pl.allowed_length,
+    p.role
+FROM playlist_permissions p
+         JOIN playlists pl ON p.playlist_id = pl.id
+         JOIN users u ON p.user_id = u.id  -- Join users table
+WHERE p.playlist_id = $1 AND  p.user_id = $2
 `
 
-func (q *Queries) GetPlaylistById(ctx context.Context, id string) (Playlist, error) {
-	row := q.db.QueryRow(ctx, getPlaylistById, id)
-	var i Playlist
+type GetPlaylistByIdParams struct {
+	PlaylistID string
+	UserID     int64
+}
+
+type GetPlaylistByIdRow struct {
+	ID            string
+	Title         string
+	Thumbnail     string
+	Tracks        []string
+	AllowedTracks []string
+	Length        pgtype.Int4
+	AllowedLength pgtype.Int4
+	Role          string
+}
+
+func (q *Queries) GetPlaylistById(ctx context.Context, arg GetPlaylistByIdParams) (GetPlaylistByIdRow, error) {
+	row := q.db.QueryRow(ctx, getPlaylistById, arg.PlaylistID, arg.UserID)
+	var i GetPlaylistByIdRow
 	err := row.Scan(
 		&i.ID,
 		&i.Title,
@@ -222,120 +244,9 @@ func (q *Queries) GetPlaylistById(ctx context.Context, id string) (Playlist, err
 		&i.AllowedTracks,
 		&i.Length,
 		&i.AllowedLength,
+		&i.Role,
 	)
 	return i, err
-}
-
-const getPlaylistByPlaylistId = `-- name: GetPlaylistByPlaylistId :many
-SELECT
-    p.playlist_id,
-    p.user_id,
-    u.name AS user_name,  -- New: include user name
-    p.role,
-    pl.title AS playlist_title,
-    pl.thumbnail,
-    pl.length AS track_count,
-    pl.allowed_length AS allowed_count
-FROM playlist_permissions p
-         JOIN playlists pl ON p.playlist_id = pl.id
-         JOIN users u ON p.user_id = u.id  -- Join users table
-WHERE p.playlist_id = $1
-`
-
-type GetPlaylistByPlaylistIdRow struct {
-	PlaylistID    string
-	UserID        int64
-	UserName      string
-	Role          interface{}
-	PlaylistTitle string
-	Thumbnail     string
-	TrackCount    pgtype.Int4
-	AllowedCount  pgtype.Int4
-}
-
-func (q *Queries) GetPlaylistByPlaylistId(ctx context.Context, playlistID string) ([]GetPlaylistByPlaylistIdRow, error) {
-	rows, err := q.db.Query(ctx, getPlaylistByPlaylistId, playlistID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []GetPlaylistByPlaylistIdRow
-	for rows.Next() {
-		var i GetPlaylistByPlaylistIdRow
-		if err := rows.Scan(
-			&i.PlaylistID,
-			&i.UserID,
-			&i.UserName,
-			&i.Role,
-			&i.PlaylistTitle,
-			&i.Thumbnail,
-			&i.TrackCount,
-			&i.AllowedCount,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const getPlaylistByUserId = `-- name: GetPlaylistByUserId :many
-SELECT
-    p.playlist_id,
-    p.user_id,
-    u.name AS user_name,  -- New: include user name
-    p.role,
-    pl.title AS playlist_title,
-    pl.thumbnail,
-    pl.length AS track_count,
-    pl.allowed_length AS allowed_count
-FROM playlist_permissions p
-         JOIN playlists pl ON p.playlist_id = pl.id
-         JOIN users u ON p.user_id = u.id  -- Join users table
-WHERE p.user_id = $1
-`
-
-type GetPlaylistByUserIdRow struct {
-	PlaylistID    string
-	UserID        int64
-	UserName      string
-	Role          interface{}
-	PlaylistTitle string
-	Thumbnail     string
-	TrackCount    pgtype.Int4
-	AllowedCount  pgtype.Int4
-}
-
-func (q *Queries) GetPlaylistByUserId(ctx context.Context, userID int64) ([]GetPlaylistByUserIdRow, error) {
-	rows, err := q.db.Query(ctx, getPlaylistByUserId, userID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []GetPlaylistByUserIdRow
-	for rows.Next() {
-		var i GetPlaylistByUserIdRow
-		if err := rows.Scan(
-			&i.PlaylistID,
-			&i.UserID,
-			&i.UserName,
-			&i.Role,
-			&i.PlaylistTitle,
-			&i.Thumbnail,
-			&i.TrackCount,
-			&i.AllowedCount,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
 }
 
 const getTrackById = `-- name: GetTrackById :one
@@ -370,8 +281,7 @@ func (q *Queries) GetUserById(ctx context.Context, id int64) (User, error) {
 const getUserPlaylists = `-- name: GetUserPlaylists :many
 SELECT
     pl.id, pl.title, pl.thumbnail, pl.tracks, pl.allowed_tracks, pl.length, pl.allowed_length,
-    p.role,
-    u.name AS user_name  -- New: include user name
+    p.role
 FROM playlists pl
          JOIN playlist_permissions p ON pl.id = p.playlist_id
          JOIN users u ON p.user_id = u.id  -- Join users table
@@ -386,8 +296,7 @@ type GetUserPlaylistsRow struct {
 	AllowedTracks []string
 	Length        pgtype.Int4
 	AllowedLength pgtype.Int4
-	Role          interface{}
-	UserName      string
+	Role          string
 }
 
 func (q *Queries) GetUserPlaylists(ctx context.Context, userID int64) ([]GetUserPlaylistsRow, error) {
@@ -408,7 +317,6 @@ func (q *Queries) GetUserPlaylists(ctx context.Context, userID int64) ([]GetUser
 			&i.Length,
 			&i.AllowedLength,
 			&i.Role,
-			&i.UserName,
 		); err != nil {
 			return nil, err
 		}
@@ -424,7 +332,7 @@ const initPermissions = `-- name: InitPermissions :exec
 CREATE TABLE IF NOT EXISTS playlist_permissions (
     playlist_id TEXT NOT NULL REFERENCES playlists(id) ON DELETE CASCADE,
     user_id BIGINT NOT NULL REFERENCES users(id),
-    role playlist_role NOT NULL,
+    role TEXT NOT NULL,
     PRIMARY KEY (playlist_id, user_id)
 )
 `
@@ -450,19 +358,6 @@ CREATE TABLE IF NOT EXISTS playlists (
 // INIT DATABASE TABLES / SCHEMA BEGIN
 func (q *Queries) InitPlaylists(ctx context.Context) error {
 	_, err := q.db.Exec(ctx, initPlaylists)
-	return err
-}
-
-const initRoleEnum = `-- name: InitRoleEnum :exec
-DO $$ BEGIN
-    CREATE TYPE playlist_role AS ENUM ('viewer', 'moderator', 'owner');
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$
-`
-
-func (q *Queries) InitRoleEnum(ctx context.Context) error {
-	_, err := q.db.Exec(ctx, initRoleEnum)
 	return err
 }
 

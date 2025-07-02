@@ -26,42 +26,17 @@ func NewConnection(ctx context.Context, connUrl string) (*pgxpool.Pool, error) {
 		return nil, err
 	}
 
-	/*
-		initTx, err := pool.BeginTx(ctx, pgx.TxOptions{})
-		if err != nil {
-			pool.Close()
-			return nil, err
-		}
-
-		queries := repository.New(initTx)
-	*/
 	queries := repository.New(pool)
 	err = multierr.Combine(
 		queries.InitUsers(ctx),
 		queries.InitTracks(ctx),
 		queries.InitPlaylists(ctx),
-		queries.InitRoleEnum(ctx),
 		queries.InitPermissions(ctx),
 	)
 	if err != nil {
-		//
 		pool.Close()
-		/*
-			txErr := initTx.Rollback(ctx)
-			if txErr != nil {
-				return nil, txErr
-			}
-		*/
 		return nil, err
 	}
-
-	/*
-		err = initTx.Commit(ctx)
-			if err != nil {
-				pool.Close()
-				return nil, err
-			}
-	*/
 
 	return pool, nil
 }

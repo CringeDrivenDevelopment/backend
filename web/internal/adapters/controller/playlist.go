@@ -2,6 +2,8 @@ package controller
 
 import (
 	"backend/cmd/app"
+	"backend/internal/adapters/controller/middlewares"
+	"backend/internal/adapters/repository"
 	"backend/internal/domain/dto"
 	"backend/internal/domain/service"
 	"context"
@@ -24,7 +26,12 @@ func (h *playlistHandler) create(ctx context.Context, input *struct {
 }) (*struct {
 	Body dto.Playlist
 }, error) {
-	resp, err := h.playlistService.Create(ctx, input.Body.Title)
+	val, ok := ctx.Value(middlewares.USER_JWT_KEY).(repository.User)
+	if !ok {
+		return nil, huma.Error500InternalServerError("User not found in context")
+	}
+
+	resp, err := h.playlistService.Create(ctx, input.Body.Title, val.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +43,12 @@ func (h *playlistHandler) getById(ctx context.Context, input *struct {
 }) (*struct {
 	Body dto.Playlist
 }, error) {
-	resp, err := h.playlistService.GetById(ctx, input.Id)
+	val, ok := ctx.Value(middlewares.USER_JWT_KEY).(repository.User)
+	if !ok {
+		return nil, huma.Error500InternalServerError("User not found in context")
+	}
+
+	resp, err := h.playlistService.GetById(ctx, input.Id, val.ID)
 	if err != nil {
 		return nil, huma.Error404NotFound("playlist not found", err)
 	}
@@ -44,19 +56,47 @@ func (h *playlistHandler) getById(ctx context.Context, input *struct {
 }
 
 func (h *playlistHandler) submit(ctx context.Context, input *struct {
-	Body struct {
-		TrackId string `json:"track_id"`
+	PlaylistId string `path:"id" minLength:"26" maxLength:"26" example:"01JZ35PYGP6HJA08H0NHYPBHWD" doc:"playlist id"`
+	Body       struct {
+		TrackId string `json:"track_id" minLength:"11" maxLength:"11" example:"dQw4w9WgXcQ"`
 	}
-}) (*struct {
-	Body dto.Playlist
-}, error) {
+}) (*struct{}, error) {
+	val, ok := ctx.Value(middlewares.USER_JWT_KEY).(repository.User)
+	if !ok {
+		return nil, huma.Error500InternalServerError("User not found in context")
+	}
+
+	err := h.playlistService.SubmitTrack(ctx, input.PlaylistId, input.Body.TrackId, val.ID)
+	if err != nil {
+		return nil, huma.Error404NotFound("playlist not found", err)
+	}
+	return nil, nil
+}
+
+func (h *playlistHandler) delete(ctx context.Context, input *struct {
+	Id string `path:"id" minLength:"26" maxLength:"26" example:"01JZ35PYGP6HJA08H0NHYPBHWD" doc:"playlist id"`
+}) (*struct{}, error) {
+	val, ok := ctx.Value(middlewares.USER_JWT_KEY).(repository.User)
+	if !ok {
+		return nil, huma.Error500InternalServerError("User not found in context")
+	}
+
+	_, err := h.playlistService.GetById(ctx, input.Id, val.ID)
+	if err != nil {
+		return nil, huma.Error404NotFound("playlist not found", err)
+	}
+
+	err = h.playlistService.Delete(ctx, input.Id)
+	if err != nil {
+		return nil, err
+	}
 
 	return nil, nil
 }
 
 func (h *playlistHandler) Setup(router huma.API, auth func(ctx huma.Context, next func(ctx huma.Context))) {
 	huma.Register(router, huma.Operation{
-		OperationID: "create-playlist",
+		OperationID: "playlist-create",
 		Path:        "/api/playlist/new",
 		Method:      http.MethodPost,
 		Errors: []int{
@@ -82,6 +122,7 @@ func (h *playlistHandler) Setup(router huma.API, auth func(ctx huma.Context, nex
 		Method:      http.MethodGet,
 		Errors: []int{
 			404,
+			500,
 		},
 		Tags: []string{
 			"playlist",
@@ -95,4 +136,46 @@ func (h *playlistHandler) Setup(router huma.API, auth func(ctx huma.Context, nex
 			},
 		},
 	}, h.getById)
+
+	huma.Register(router, huma.Operation{
+		OperationID: "playlist-submit",
+		Path:        "/api/playlist/{id}/submit",
+		Method:      http.MethodPost,
+		Errors: []int{
+			404,
+			500,
+		},
+		Tags: []string{
+			"playlist",
+		},
+		Summary:     "Add a track to playlist for a review (if role==viewer)",
+		Description: "TODO: Change",
+		Middlewares: huma.Middlewares{auth},
+		Security: []map[string][]string{
+			{
+				"jwt": []string{},
+			},
+		},
+	}, h.submit)
+
+	huma.Register(router, huma.Operation{
+		OperationID: "playlist-delete",
+		Path:        "/api/playlist/{id}",
+		Method:      http.MethodDelete,
+		Errors: []int{
+			404,
+			500,
+		},
+		Tags: []string{
+			"playlist",
+		},
+		Summary:     "Delete a playlist",
+		Description: "TODO: Change",
+		Middlewares: huma.Middlewares{auth},
+		Security: []map[string][]string{
+			{
+				"jwt": []string{},
+			},
+		},
+	}, h.delete)
 }

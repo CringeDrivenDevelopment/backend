@@ -15,6 +15,8 @@ type MiddlewareHandler struct {
 	logger       *zap.Logger
 }
 
+const USER_JWT_KEY = "user"
+
 // NewMiddlewareHandler is a function that returns a new instance of MiddlewareHandler.
 func NewMiddlewareHandler(app *app.App) *MiddlewareHandler {
 	userService := service.NewUserService(app.DB)
@@ -36,7 +38,7 @@ func NewMiddlewareHandler(app *app.App) *MiddlewareHandler {
 func (h *MiddlewareHandler) IsAuthenticated(ctx huma.Context, next func(ctx huma.Context)) {
 	authHeader := ctx.Header("Authorization")
 
-	_, err := h.tokenService.GetUserFromJWT(authHeader, ctx.Context(), h.userService.GetByID)
+	user, err := h.tokenService.GetUserFromJWT(authHeader, ctx.Context(), h.userService.GetByID)
 	if err != nil {
 		err := huma.WriteErr(h.api, ctx, 401, "unauthorized")
 		if err != nil {
@@ -45,6 +47,8 @@ func (h *MiddlewareHandler) IsAuthenticated(ctx huma.Context, next func(ctx huma
 		}
 		return
 	}
+
+	ctx = huma.WithValue(ctx, USER_JWT_KEY, user)
 
 	// Otherwise, just continue as normal.
 	next(ctx)

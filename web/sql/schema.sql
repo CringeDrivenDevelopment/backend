@@ -21,18 +21,11 @@ CREATE TABLE IF NOT EXISTS tracks (
     explicit BOOLEAN NOT NULL DEFAULT FALSE
 );
 
--- name: InitRoleEnum :exec
-DO $$ BEGIN
-    CREATE TYPE playlist_role AS ENUM ('viewer', 'moderator', 'owner');
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
-
 -- name: InitPermissions :exec
 CREATE TABLE IF NOT EXISTS playlist_permissions (
     playlist_id TEXT NOT NULL REFERENCES playlists(id) ON DELETE CASCADE,
     user_id BIGINT NOT NULL REFERENCES users(id),
-    role playlist_role NOT NULL,
+    role TEXT NOT NULL,
     PRIMARY KEY (playlist_id, user_id)
 );
 
@@ -66,48 +59,23 @@ WHERE id = $1;
 -- name: DeletePlaylist :exec
 DELETE FROM playlists WHERE id = $1;
 
--- name: GetPlaylistById :one
-SELECT * FROM playlists WHERE id = $1;
-
 -- name: GetUserPlaylists :many
 SELECT
     pl.*,
-    p.role,
-    u.name AS user_name  -- New: include user name
+    p.role
 FROM playlists pl
          JOIN playlist_permissions p ON pl.id = p.playlist_id
          JOIN users u ON p.user_id = u.id  -- Join users table
 WHERE p.user_id = $1;
 
--- name: GetPlaylistByUserId :many
+-- name: GetPlaylistById :one
 SELECT
-    p.playlist_id,
-    p.user_id,
-    u.name AS user_name,  -- New: include user name
-    p.role,
-    pl.title AS playlist_title,
-    pl.thumbnail,
-    pl.length AS track_count,
-    pl.allowed_length AS allowed_count
+    pl.*,
+    p.role
 FROM playlist_permissions p
          JOIN playlists pl ON p.playlist_id = pl.id
          JOIN users u ON p.user_id = u.id  -- Join users table
-WHERE p.user_id = $1;
-
--- name: GetPlaylistByPlaylistId :many
-SELECT
-    p.playlist_id,
-    p.user_id,
-    u.name AS user_name,  -- New: include user name
-    p.role,
-    pl.title AS playlist_title,
-    pl.thumbnail,
-    pl.length AS track_count,
-    pl.allowed_length AS allowed_count
-FROM playlist_permissions p
-         JOIN playlists pl ON p.playlist_id = pl.id
-         JOIN users u ON p.user_id = u.id  -- Join users table
-WHERE p.playlist_id = $1;
+WHERE p.playlist_id = $1 AND  p.user_id = $2;
 
 -- PLAYLISTS CRUD END
 
