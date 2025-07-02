@@ -37,7 +37,7 @@ func NewYoutubeService(app *app.App) *YoutubeService {
 }
 
 func (s *YoutubeService) Search(ctx context.Context, query string) ([]dto.Track, error) {
-	req, err := http.NewRequest(http.MethodGet, s.baseUrl+"/search?query="+url.QueryEscape(query), nil)
+	req, err := http.NewRequest(http.MethodGet, s.baseUrl+"/api/search?query="+url.QueryEscape(query), nil)
 	if err != nil {
 		return nil, err
 	}
