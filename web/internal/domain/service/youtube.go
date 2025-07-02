@@ -23,6 +23,10 @@ type YoutubeService struct {
 	authToken string
 }
 
+type searchError struct {
+	Error string `json:"error"`
+}
+
 func NewYoutubeService(app *app.App) *YoutubeService {
 	return &YoutubeService{
 		client:    &http.Client{},
@@ -57,7 +61,13 @@ func (s *YoutubeService) Search(ctx context.Context, query string) ([]dto.Track,
 
 	err = sonic.Unmarshal(body, &data)
 	if err != nil {
-		return nil, err
+		var apiErr searchError
+		sonicErr := sonic.Unmarshal(body, &apiErr)
+		if sonicErr != nil {
+			return nil, sonicErr
+		}
+
+		return nil, errors.New(apiErr.Error)
 	}
 
 	searchQueries := repository.New(s.pool)
