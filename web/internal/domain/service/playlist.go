@@ -113,14 +113,17 @@ func (s *PlaylistService) GetById(ctx context.Context, playlistId string, userId
 		}
 	}
 
+	length := playlist.Length.Int32
+	allowedTracks := playlist.AllowedLength.Int32
+
 	return dto.Playlist{
 		Id:            playlist.ID,
 		Title:         playlist.Title,
 		Thumbnail:     playlist.Thumbnail,
-		Length:        len(playlist.Tracks),
+		Length:        int(length),
 		Tracks:        tracks,
 		AllowedTracks: playlist.AllowedTracks,
-		AllowedLength: len(playlist.AllowedTracks),
+		AllowedLength: int(allowedTracks),
 	}, nil
 }
 
@@ -176,6 +179,32 @@ func (s *PlaylistService) SubmitTrack(ctx context.Context, playlistId, trackId s
 	}
 
 	return nil
+}
+
+func (s *PlaylistService) GetAll(ctx context.Context, userId int64) ([]dto.Playlist, error) {
+	queries := repository.New(s.pool)
+	playlists, err := queries.GetUserPlaylists(ctx, userId)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]dto.Playlist, len(playlists))
+	for i, playlist := range playlists {
+		length := playlist.Length.Int32
+		allowedTracks := playlist.AllowedLength.Int32
+
+		result[i] = dto.Playlist{
+			Id:            playlist.ID,
+			Title:         playlist.Title,
+			Thumbnail:     playlist.Thumbnail,
+			Length:        int(length),
+			AllowedLength: int(allowedTracks),
+			Tracks:        make([]dto.Track, 0),
+			AllowedTracks: make([]string, 0),
+		}
+	}
+
+	return result, nil
 }
 
 func (s *PlaylistService) Delete(ctx context.Context, playlistId string) error {

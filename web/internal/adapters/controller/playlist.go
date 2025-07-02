@@ -94,13 +94,30 @@ func (h *playlistHandler) delete(ctx context.Context, input *struct {
 	return nil, nil
 }
 
+func (h *playlistHandler) getAll(ctx context.Context, _ *struct{}) (*struct {
+	Body []dto.Playlist
+}, error) {
+	val, ok := ctx.Value(middlewares.USER_JWT_KEY).(repository.User)
+	if !ok {
+		return nil, huma.Error500InternalServerError("User not found in context")
+	}
+
+	resp, err := h.playlistService.GetAll(ctx, val.ID)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Playlists not found", err)
+	}
+
+	return &struct{ Body []dto.Playlist }{Body: resp}, nil
+}
+
 func (h *playlistHandler) Setup(router huma.API, auth func(ctx huma.Context, next func(ctx huma.Context))) {
 	huma.Register(router, huma.Operation{
 		OperationID: "playlist-create",
-		Path:        "/api/playlist/new",
+		Path:        "/api/playlists/new",
 		Method:      http.MethodPost,
 		Errors: []int{
 			400,
+			401,
 			500,
 		},
 		Tags: []string{
@@ -117,10 +134,11 @@ func (h *playlistHandler) Setup(router huma.API, auth func(ctx huma.Context, nex
 	}, h.create)
 
 	huma.Register(router, huma.Operation{
-		OperationID: "get-playlist-by-id",
-		Path:        "/api/playlist/{id}",
+		OperationID: "playlist-by-id",
+		Path:        "/api/playlists/{id}",
 		Method:      http.MethodGet,
 		Errors: []int{
+			401,
 			404,
 			500,
 		},
@@ -139,9 +157,10 @@ func (h *playlistHandler) Setup(router huma.API, auth func(ctx huma.Context, nex
 
 	huma.Register(router, huma.Operation{
 		OperationID: "playlist-submit",
-		Path:        "/api/playlist/{id}/submit",
+		Path:        "/api/playlists/{id}/submit",
 		Method:      http.MethodPost,
 		Errors: []int{
+			401,
 			404,
 			500,
 		},
@@ -160,9 +179,10 @@ func (h *playlistHandler) Setup(router huma.API, auth func(ctx huma.Context, nex
 
 	huma.Register(router, huma.Operation{
 		OperationID: "playlist-delete",
-		Path:        "/api/playlist/{id}",
+		Path:        "/api/playlists/{id}",
 		Method:      http.MethodDelete,
 		Errors: []int{
+			401,
 			404,
 			500,
 		},
@@ -178,4 +198,25 @@ func (h *playlistHandler) Setup(router huma.API, auth func(ctx huma.Context, nex
 			},
 		},
 	}, h.delete)
+
+	huma.Register(router, huma.Operation{
+		OperationID: "playlist-all",
+		Path:        "/api/playlists",
+		Method:      http.MethodGet,
+		Errors: []int{
+			401,
+			500,
+		},
+		Tags: []string{
+			"playlist",
+		},
+		Summary:     "Get all",
+		Description: "Get all playlists of user",
+		Middlewares: huma.Middlewares{auth},
+		Security: []map[string][]string{
+			{
+				"jwt": []string{},
+			},
+		},
+	}, h.getAll)
 }

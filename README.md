@@ -13,6 +13,7 @@
 - портануть на S3
 - playlist type
 - change song id to ulid
+- show playlist time
 
 ## Bot TODO
 - действия в чате/канале при добавлении

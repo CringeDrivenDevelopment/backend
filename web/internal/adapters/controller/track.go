@@ -43,6 +43,7 @@ func (h *tracksHandler) Setup(router huma.API, auth func(ctx huma.Context, next 
 		Method:      http.MethodGet,
 		Errors: []int{
 			400,
+			401,
 			500,
 		},
 		Tags: []string{
