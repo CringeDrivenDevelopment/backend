@@ -81,7 +81,7 @@ func New(logger *zap.Logger) (*App, error) {
 		return nil, err
 	}
 
-	requestValidator := validator.New(cfg.BotToken)
+	requestValidator := validator.New(cfg.BotTokens)
 
 	return &App{
 		Server:    router,

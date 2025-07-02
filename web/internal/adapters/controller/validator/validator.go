@@ -20,27 +20,21 @@ type ErrorResponse struct {
 	Value       interface{}
 }
 
-func New(botToken string) *Validator {
+func New(botTokens []string) *Validator {
 	newValidator := validator.New()
-
-	_ = newValidator.RegisterValidation("username", func(fl validator.FieldLevel) bool {
-		return len(fl.Field().String()) >= 4 && len(fl.Field().String()) <= 20
-	})
+	// TODO: change to a faster validation engine
 
 	_ = newValidator.RegisterValidation("init_data_raw", func(fl validator.FieldLevel) bool {
 		initDataRaw := fl.Field().String()
-		token := botToken
 		expIn := 1 * time.Hour
 
-		return initdata.Validate(initDataRaw, token, expIn) == nil
-	})
+		for _, token := range botTokens {
+			if initdata.Validate(initDataRaw, token, expIn) == nil {
+				return true
+			}
+		}
 
-	_ = newValidator.RegisterValidation("header", func(fl validator.FieldLevel) bool {
-		return len(fl.Field().String()) >= 5 && len(fl.Field().String()) <= 150
-	})
-
-	_ = newValidator.RegisterValidation("body", func(fl validator.FieldLevel) bool {
-		return len(fl.Field().String()) >= 5 && len(fl.Field().String()) <= 1500
+		return false
 	})
 
 	return &Validator{
@@ -81,17 +75,3 @@ func (v *Validator) ValidateData(data interface{}) error {
 	}
 	return nil
 }
-
-/*
-func (v Validator) GetLimitAndOffset(c fiber.Ctx, defaultLimit string, defaultOffset string) (int, int) {
-	limit, err := strconv.Atoi(c.Query("limit", defaultLimit))
-	if err != nil {
-		return 0, 10
-	}
-	offset, err := strconv.Atoi(c.Query("offset", defaultOffset))
-	if err != nil {
-		return 0, 10
-	}
-	return limit, offset
-}
-*/

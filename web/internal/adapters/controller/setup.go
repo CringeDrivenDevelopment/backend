@@ -12,7 +12,6 @@ import (
 
 func Setup(app *app.App) {
 	app.Server.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		// AllowOrigins: []string{"localhost", "cloud.lxft.tech", "lxft.tech", "tg-mini-app.local"},
 		AllowOrigins: []string{
 			"https://tg-mini-app.local",
 			"https://cloud.lxft.tech",
@@ -20,7 +19,6 @@ func Setup(app *app.App) {
 			"http://localhost",
 		},
 	}))
-	// TODO: change origin to strict mode
 
 	// log all requests
 	// TODO: to zap logger
