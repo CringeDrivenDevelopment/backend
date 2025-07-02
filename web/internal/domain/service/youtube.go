@@ -63,7 +63,7 @@ func (s *YoutubeService) Search(ctx context.Context, query string) ([]dto.Track,
 	searchQueries := repository.New(s.pool)
 
 	for _, track := range data {
-		if _, err := searchQueries.GetTrackById(ctx, track.Id); errors.Is(pgx.ErrNoRows, err) {
+		if _, err := searchQueries.GetTrackById(ctx, track.Id); errors.Is(err, pgx.ErrNoRows) {
 			trackTx, err := s.pool.BeginTx(ctx, pgx.TxOptions{})
 			if err != nil {
 				return nil, err

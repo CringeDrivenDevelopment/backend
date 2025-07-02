@@ -61,16 +61,13 @@ func New(logger *zap.Logger) (*App, error) {
 			Scheme:       "Bearer",
 		},
 	}
-	apiCfg.OpenAPI.Servers = []*huma.Server{
-		{
-			URL:         "https://cloud.lxft.tech",
-			Description: "PROD",
-		},
-		{
-			URL:         "http://localhost:8080",
-			Description: "dev",
-		},
-	}
+	apiCfg.OpenAPI.Servers = append(apiCfg.Servers, &huma.Server{
+		URL:         "https://cloud.lxft.tech",
+		Description: "PROD",
+	}, &huma.Server{
+		URL:         "http://localhost:8080",
+		Description: "dev",
+	})
 	router := echo.New()
 	router.HideBanner = true
 	router.HidePort = true
