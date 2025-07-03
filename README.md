@@ -14,6 +14,7 @@
 - playlist type
 - change song id to ulid
 - show playlist time
+- show roles in playlists
 
 ## Bot TODO
 - действия в чате/канале при добавлении

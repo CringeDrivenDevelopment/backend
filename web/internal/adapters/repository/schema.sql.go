@@ -17,8 +17,8 @@ const createPlaylist = `-- name: CreatePlaylist :exec
 
 
 
-INSERT INTO playlists (id, title, thumbnail, tracks, allowed_tracks)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO playlists (id, title, thumbnail, tracks, allowed_tracks, type)
+VALUES ($1, $2, $3, $4, $5, $6)
 `
 
 type CreatePlaylistParams struct {
@@ -27,6 +27,7 @@ type CreatePlaylistParams struct {
 	Thumbnail     string
 	Tracks        []string
 	AllowedTracks []string
+	Type          string
 }
 
 // INIT DATABASE TABLES / SCHEMA END
@@ -39,6 +40,7 @@ func (q *Queries) CreatePlaylist(ctx context.Context, arg CreatePlaylistParams) 
 		arg.Thumbnail,
 		arg.Tracks,
 		arg.AllowedTracks,
+		arg.Type,
 	)
 	return err
 }
@@ -153,7 +155,8 @@ SET
     title = COALESCE($2, title),
     thumbnail = COALESCE($3, thumbnail),
     tracks = COALESCE($4, tracks),
-    allowed_tracks = COALESCE($5, allowed_tracks)
+    allowed_tracks = COALESCE($5, allowed_tracks),
+    type = COALESCE($6, type)
 WHERE id = $1
 `
 
@@ -163,6 +166,7 @@ type EditPlaylistParams struct {
 	Thumbnail     string
 	Tracks        []string
 	AllowedTracks []string
+	Type          string
 }
 
 func (q *Queries) EditPlaylist(ctx context.Context, arg EditPlaylistParams) error {
@@ -172,6 +176,7 @@ func (q *Queries) EditPlaylist(ctx context.Context, arg EditPlaylistParams) erro
 		arg.Thumbnail,
 		arg.Tracks,
 		arg.AllowedTracks,
+		arg.Type,
 	)
 	return err
 }
@@ -209,7 +214,7 @@ func (q *Queries) EditUser(ctx context.Context, arg EditUserParams) error {
 
 const getPlaylistById = `-- name: GetPlaylistById :one
 SELECT
-    pl.id, pl.title, pl.thumbnail, pl.tracks, pl.allowed_tracks, pl.length, pl.allowed_length,
+    pl.id, pl.title, pl.thumbnail, pl.tracks, pl.allowed_tracks, pl.count, pl.allowed_count, pl.type, pl.time, pl.allowed_time,
     p.role
 FROM playlist_permissions p
          JOIN playlists pl ON p.playlist_id = pl.id
@@ -228,8 +233,11 @@ type GetPlaylistByIdRow struct {
 	Thumbnail     string
 	Tracks        []string
 	AllowedTracks []string
-	Length        pgtype.Int4
-	AllowedLength pgtype.Int4
+	Count         pgtype.Int4
+	AllowedCount  pgtype.Int4
+	Type          string
+	Time          int32
+	AllowedTime   int32
 	Role          string
 }
 
@@ -242,8 +250,11 @@ func (q *Queries) GetPlaylistById(ctx context.Context, arg GetPlaylistByIdParams
 		&i.Thumbnail,
 		&i.Tracks,
 		&i.AllowedTracks,
-		&i.Length,
-		&i.AllowedLength,
+		&i.Count,
+		&i.AllowedCount,
+		&i.Type,
+		&i.Time,
+		&i.AllowedTime,
 		&i.Role,
 	)
 	return i, err
@@ -267,6 +278,42 @@ func (q *Queries) GetTrackById(ctx context.Context, id string) (Track, error) {
 	return i, err
 }
 
+const getTrackPlaylists = `-- name: GetTrackPlaylists :many
+SELECT pl.id
+FROM playlists pl
+         JOIN playlist_permissions pp ON pl.id = pp.playlist_id
+WHERE
+    pp.user_id = $1
+  AND $2::text = ANY(pl.tracks)
+`
+
+type GetTrackPlaylistsParams struct {
+	UserID  int64
+	TrackID string
+}
+
+// param: TrackId text
+// param: UserId bigint
+func (q *Queries) GetTrackPlaylists(ctx context.Context, arg GetTrackPlaylistsParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, getTrackPlaylists, arg.UserID, arg.TrackID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getUserById = `-- name: GetUserById :one
 SELECT id, name FROM users WHERE id = $1
 `
@@ -280,7 +327,7 @@ func (q *Queries) GetUserById(ctx context.Context, id int64) (User, error) {
 
 const getUserPlaylists = `-- name: GetUserPlaylists :many
 SELECT
-    pl.id, pl.title, pl.thumbnail, pl.tracks, pl.allowed_tracks, pl.length, pl.allowed_length,
+    pl.id, pl.title, pl.thumbnail, pl.tracks, pl.allowed_tracks, pl.count, pl.allowed_count, pl.type, pl.time, pl.allowed_time,
     p.role
 FROM playlists pl
          JOIN playlist_permissions p ON pl.id = p.playlist_id
@@ -294,8 +341,11 @@ type GetUserPlaylistsRow struct {
 	Thumbnail     string
 	Tracks        []string
 	AllowedTracks []string
-	Length        pgtype.Int4
-	AllowedLength pgtype.Int4
+	Count         pgtype.Int4
+	AllowedCount  pgtype.Int4
+	Type          string
+	Time          int32
+	AllowedTime   int32
 	Role          string
 }
 
@@ -314,8 +364,11 @@ func (q *Queries) GetUserPlaylists(ctx context.Context, userID int64) ([]GetUser
 			&i.Thumbnail,
 			&i.Tracks,
 			&i.AllowedTracks,
-			&i.Length,
-			&i.AllowedLength,
+			&i.Count,
+			&i.AllowedCount,
+			&i.Type,
+			&i.Time,
+			&i.AllowedTime,
 			&i.Role,
 		); err != nil {
 			return nil, err
@@ -326,6 +379,26 @@ func (q *Queries) GetUserPlaylists(ctx context.Context, userID int64) ([]GetUser
 		return nil, err
 	}
 	return items, nil
+}
+
+const initCalculatePlaylistTime = `-- name: InitCalculatePlaylistTime :exec
+CREATE OR REPLACE FUNCTION calculate_playlist_time(track_ids TEXT[])
+    RETURNS INTEGER AS $$
+DECLARE
+    total_time INTEGER;
+BEGIN
+    SELECT COALESCE(SUM(length), 0) INTO total_time
+    FROM tracks
+    WHERE id = ANY(track_ids);
+
+    RETURN total_time;
+END;
+$$ LANGUAGE plpgsql
+`
+
+func (q *Queries) InitCalculatePlaylistTime(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, initCalculatePlaylistTime)
+	return err
 }
 
 const initPermissions = `-- name: InitPermissions :exec
@@ -342,6 +415,36 @@ func (q *Queries) InitPermissions(ctx context.Context) error {
 	return err
 }
 
+const initPermissionsIndex = `-- name: InitPermissionsIndex :exec
+CREATE INDEX IF NOT EXISTS idx_permissions_user ON playlist_permissions (user_id)
+`
+
+func (q *Queries) InitPermissionsIndex(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, initPermissionsIndex)
+	return err
+}
+
+const initPlaylistTimesTrigger = `-- name: InitPlaylistTimesTrigger :exec
+DO $$
+    BEGIN
+        IF NOT EXISTS (
+            SELECT 1 FROM pg_trigger
+            WHERE tgname = 'playlist_times_trigger'
+        ) THEN
+            CREATE TRIGGER playlist_times_trigger
+                BEFORE INSERT OR UPDATE OF tracks, allowed_tracks ON playlists
+                FOR EACH ROW
+            EXECUTE FUNCTION update_playlist_times();
+        END IF;
+    END
+$$
+`
+
+func (q *Queries) InitPlaylistTimesTrigger(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, initPlaylistTimesTrigger)
+	return err
+}
+
 const initPlaylists = `-- name: InitPlaylists :exec
 
 CREATE TABLE IF NOT EXISTS playlists (
@@ -350,14 +453,56 @@ CREATE TABLE IF NOT EXISTS playlists (
     thumbnail TEXT NOT NULL,
     tracks TEXT[] DEFAULT '{}',
     allowed_tracks TEXT[] DEFAULT '{}',
-    length INTEGER GENERATED ALWAYS AS (COALESCE(array_length(tracks, 1), 0)) STORED,
-    allowed_length INTEGER GENERATED ALWAYS AS (COALESCE(array_length(allowed_tracks, 1), 0)) STORED
+    count INTEGER GENERATED ALWAYS AS (COALESCE(array_length(tracks, 1), 0)) STORED,
+    allowed_count INTEGER GENERATED ALWAYS AS (COALESCE(array_length(allowed_tracks, 1), 0)) STORED,
+    type TEXT NOT NULL,
+    time INTEGER NOT NULL DEFAULT 0,
+    allowed_time INTEGER NOT NULL DEFAULT 0
 )
 `
 
 // INIT DATABASE TABLES / SCHEMA BEGIN
 func (q *Queries) InitPlaylists(ctx context.Context) error {
 	_, err := q.db.Exec(ctx, initPlaylists)
+	return err
+}
+
+const initPlaylistsAllowedTracksIndex = `-- name: InitPlaylistsAllowedTracksIndex :exec
+CREATE INDEX IF NOT EXISTS idx_playlists_allowed_tracks ON playlists USING GIN(allowed_tracks)
+`
+
+func (q *Queries) InitPlaylistsAllowedTracksIndex(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, initPlaylistsAllowedTracksIndex)
+	return err
+}
+
+const initPlaylistsTracksIndex = `-- name: InitPlaylistsTracksIndex :exec
+CREATE INDEX IF NOT EXISTS idx_playlists_tracks ON playlists USING GIN(tracks)
+`
+
+func (q *Queries) InitPlaylistsTracksIndex(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, initPlaylistsTracksIndex)
+	return err
+}
+
+const initTrackUpdate = `-- name: InitTrackUpdate :exec
+DO $$
+    BEGIN
+        IF NOT EXISTS (
+            SELECT 1 FROM pg_trigger
+            WHERE tgname = 'track_update_trigger'
+        ) THEN
+            CREATE TRIGGER track_update_trigger
+                AFTER INSERT OR UPDATE OF length ON tracks
+                FOR EACH ROW
+            EXECUTE FUNCTION update_playlists_on_track_change();
+        END IF;
+    END
+$$
+`
+
+func (q *Queries) InitTrackUpdate(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, initTrackUpdate)
 	return err
 }
 
@@ -374,6 +519,55 @@ CREATE TABLE IF NOT EXISTS tracks (
 
 func (q *Queries) InitTracks(ctx context.Context) error {
 	_, err := q.db.Exec(ctx, initTracks)
+	return err
+}
+
+const initTracksIndex = `-- name: InitTracksIndex :exec
+CREATE INDEX IF NOT EXISTS idx_tracks_id ON tracks (id)
+`
+
+func (q *Queries) InitTracksIndex(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, initTracksIndex)
+	return err
+}
+
+const initUpdatePlaylistOnTrackChange = `-- name: InitUpdatePlaylistOnTrackChange :exec
+CREATE OR REPLACE FUNCTION update_playlists_on_track_change()
+    RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE playlists
+    SET time = calculate_playlist_time(tracks)
+    WHERE NEW.id = ANY(tracks);
+
+    UPDATE playlists
+    SET allowed_time = calculate_playlist_time(allowed_tracks)
+    WHERE NEW.id = ANY(allowed_tracks);
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql
+`
+
+func (q *Queries) InitUpdatePlaylistOnTrackChange(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, initUpdatePlaylistOnTrackChange)
+	return err
+}
+
+const initUpdatePlaylistTimes = `-- name: InitUpdatePlaylistTimes :exec
+CREATE OR REPLACE FUNCTION update_playlist_times()
+    RETURNS TRIGGER AS $$
+BEGIN
+    NEW.time = calculate_playlist_time(NEW.tracks);
+
+    NEW.allowed_time = calculate_playlist_time(NEW.allowed_tracks);
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql
+`
+
+func (q *Queries) InitUpdatePlaylistTimes(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, initUpdatePlaylistTimes)
 	return err
 }
 

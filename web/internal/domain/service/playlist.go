@@ -25,6 +25,8 @@ const ownerRole = "owner"
 
 var roles = []string{viewerRole, moderatorRole, ownerRole}
 
+const ytType = "youtube"
+
 func NewPlaylistService(app *app.App) *PlaylistService {
 	return &PlaylistService{pool: app.DB}
 }
@@ -45,6 +47,7 @@ func (s *PlaylistService) Create(ctx context.Context, title string, userId int64
 		Thumbnail:     "",
 		Tracks:        make([]string, 0),
 		AllowedTracks: make([]string, 0),
+		Type:          ytType,
 	}); err != nil {
 		if txErr := tx.Rollback(ctx); txErr != nil {
 			return dto.Playlist{}, txErr
@@ -77,8 +80,10 @@ func (s *PlaylistService) Create(ctx context.Context, title string, userId int64
 		Thumbnail:     "",
 		Tracks:        nil,
 		Length:        0,
-		AllowedTracks: nil,
+		AllowedIds:    nil,
 		AllowedLength: 0,
+		Role:          ownerRole,
+		Type:          ytType,
 	}, nil
 }
 
@@ -113,17 +118,23 @@ func (s *PlaylistService) GetById(ctx context.Context, playlistId string, userId
 		}
 	}
 
-	length := playlist.Length.Int32
-	allowedTracks := playlist.AllowedLength.Int32
+	count := playlist.Count.Int32
+	allowedCount := playlist.AllowedCount.Int32
+	time := playlist.Time
+	allowedTime := playlist.AllowedTime
 
 	return dto.Playlist{
 		Id:            playlist.ID,
 		Title:         playlist.Title,
 		Thumbnail:     playlist.Thumbnail,
-		Length:        int(length),
 		Tracks:        tracks,
-		AllowedTracks: playlist.AllowedTracks,
-		AllowedLength: int(allowedTracks),
+		AllowedIds:    playlist.AllowedTracks,
+		Count:         int(count),
+		Length:        int(time),
+		AllowedCount:  int(allowedCount),
+		AllowedLength: int(allowedTime),
+		Role:          playlist.Role,
+		Type:          playlist.Type,
 	}, nil
 }
 
@@ -190,17 +201,23 @@ func (s *PlaylistService) GetAll(ctx context.Context, userId int64) ([]dto.Playl
 
 	result := make([]dto.Playlist, len(playlists))
 	for i, playlist := range playlists {
-		length := playlist.Length.Int32
-		allowedTracks := playlist.AllowedLength.Int32
+		count := playlist.Count.Int32
+		allowedCount := playlist.AllowedCount.Int32
+		time := playlist.Time
+		allowedTime := playlist.AllowedTime
 
 		result[i] = dto.Playlist{
 			Id:            playlist.ID,
 			Title:         playlist.Title,
 			Thumbnail:     playlist.Thumbnail,
-			Length:        int(length),
-			AllowedLength: int(allowedTracks),
+			Count:         int(count),
+			Length:        int(time),
+			AllowedCount:  int(allowedCount),
+			AllowedLength: int(allowedTime),
 			Tracks:        make([]dto.Track, 0),
-			AllowedTracks: make([]string, 0),
+			AllowedIds:    make([]string, 0),
+			Role:          playlist.Role,
+			Type:          playlist.Type,
 		}
 	}
 

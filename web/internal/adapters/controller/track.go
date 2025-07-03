@@ -2,6 +2,8 @@ package controller
 
 import (
 	"backend/cmd/app"
+	"backend/internal/adapters/controller/middlewares"
+	"backend/internal/adapters/repository"
 	"backend/internal/domain/dto"
 	"backend/internal/domain/service"
 	"context"
@@ -22,13 +24,17 @@ func newTracksHandler(app *app.App) *tracksHandler {
 func (h *tracksHandler) search(ctx context.Context, input *dto.SearchInput) (*struct {
 	Body []dto.Track
 }, error) {
+	val, ok := ctx.Value(middlewares.USER_JWT_KEY).(repository.User)
+	if !ok {
+		return nil, huma.Error500InternalServerError("User not found in context")
+	}
 	query := input.Query
 
 	if len(input.Query) < 3 {
 		return nil, huma.Error400BadRequest("query too short")
 	}
 
-	search, err := h.youtube.Search(ctx, query)
+	search, err := h.youtube.Search(ctx, query, val.ID)
 	if err != nil {
 		return nil, huma.Error500InternalServerError(err.Error(), err)
 	}

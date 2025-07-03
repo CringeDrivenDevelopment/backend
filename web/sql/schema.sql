@@ -7,8 +7,11 @@ CREATE TABLE IF NOT EXISTS playlists (
     thumbnail TEXT NOT NULL,
     tracks TEXT[] DEFAULT '{}',
     allowed_tracks TEXT[] DEFAULT '{}',
-    length INTEGER GENERATED ALWAYS AS (COALESCE(array_length(tracks, 1), 0)) STORED,
-    allowed_length INTEGER GENERATED ALWAYS AS (COALESCE(array_length(allowed_tracks, 1), 0)) STORED
+    count INTEGER GENERATED ALWAYS AS (COALESCE(array_length(tracks, 1), 0)) STORED,
+    allowed_count INTEGER GENERATED ALWAYS AS (COALESCE(array_length(allowed_tracks, 1), 0)) STORED,
+    type TEXT NOT NULL,
+    time INTEGER NOT NULL DEFAULT 0,
+    allowed_time INTEGER NOT NULL DEFAULT 0
 );
 
 -- name: InitTracks :exec
@@ -35,6 +38,90 @@ CREATE TABLE IF NOT EXISTS users (
     name TEXT NOT NULL
 );
 
+-- name: InitTracksIndex :exec
+CREATE INDEX IF NOT EXISTS idx_tracks_id ON tracks (id);
+
+-- name: InitPlaylistsTracksIndex :exec
+CREATE INDEX IF NOT EXISTS idx_playlists_tracks ON playlists USING GIN(tracks);
+
+-- name: InitPlaylistsAllowedTracksIndex :exec
+CREATE INDEX IF NOT EXISTS idx_playlists_allowed_tracks ON playlists USING GIN(allowed_tracks);
+
+-- name: InitPermissionsIndex :exec
+CREATE INDEX IF NOT EXISTS idx_permissions_user ON playlist_permissions (user_id);
+
+-- name: InitCalculatePlaylistTime :exec
+CREATE OR REPLACE FUNCTION calculate_playlist_time(track_ids TEXT[])
+    RETURNS INTEGER AS $$
+DECLARE
+    total_time INTEGER;
+BEGIN
+    SELECT COALESCE(SUM(length), 0) INTO total_time
+    FROM tracks
+    WHERE id = ANY(track_ids);
+
+    RETURN total_time;
+END;
+$$ LANGUAGE plpgsql;
+
+-- name: InitUpdatePlaylistTimes :exec
+CREATE OR REPLACE FUNCTION update_playlist_times()
+    RETURNS TRIGGER AS $$
+BEGIN
+    NEW.time = calculate_playlist_time(NEW.tracks);
+
+    NEW.allowed_time = calculate_playlist_time(NEW.allowed_tracks);
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- name: InitPlaylistTimesTrigger :exec
+DO $$
+    BEGIN
+        IF NOT EXISTS (
+            SELECT 1 FROM pg_trigger
+            WHERE tgname = 'playlist_times_trigger'
+        ) THEN
+            CREATE TRIGGER playlist_times_trigger
+                BEFORE INSERT OR UPDATE OF tracks, allowed_tracks ON playlists
+                FOR EACH ROW
+            EXECUTE FUNCTION update_playlist_times();
+        END IF;
+    END
+$$;
+
+-- name: InitUpdatePlaylistOnTrackChange :exec
+CREATE OR REPLACE FUNCTION update_playlists_on_track_change()
+    RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE playlists
+    SET time = calculate_playlist_time(tracks)
+    WHERE NEW.id = ANY(tracks);
+
+    UPDATE playlists
+    SET allowed_time = calculate_playlist_time(allowed_tracks)
+    WHERE NEW.id = ANY(allowed_tracks);
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- name: InitTrackUpdate :exec
+DO $$
+    BEGIN
+        IF NOT EXISTS (
+            SELECT 1 FROM pg_trigger
+            WHERE tgname = 'track_update_trigger'
+        ) THEN
+            CREATE TRIGGER track_update_trigger
+                AFTER INSERT OR UPDATE OF length ON tracks
+                FOR EACH ROW
+            EXECUTE FUNCTION update_playlists_on_track_change();
+        END IF;
+    END
+$$;
+
 -- INIT DATABASE TABLES / SCHEMA END
 
 
@@ -44,8 +131,8 @@ CREATE TABLE IF NOT EXISTS users (
 -- PLAYLISTS CRUD BEGIN
 
 -- name: CreatePlaylist :exec
-INSERT INTO playlists (id, title, thumbnail, tracks, allowed_tracks)
-VALUES ($1, $2, $3, $4, $5);
+INSERT INTO playlists (id, title, thumbnail, tracks, allowed_tracks, type)
+VALUES ($1, $2, $3, $4, $5, $6);
 
 -- name: EditPlaylist :exec
 UPDATE playlists
@@ -53,7 +140,8 @@ SET
     title = COALESCE($2, title),
     thumbnail = COALESCE($3, thumbnail),
     tracks = COALESCE($4, tracks),
-    allowed_tracks = COALESCE($5, allowed_tracks)
+    allowed_tracks = COALESCE($5, allowed_tracks),
+    type = COALESCE($6, type)
 WHERE id = $1;
 
 -- name: DeletePlaylist :exec
@@ -76,6 +164,16 @@ FROM playlist_permissions p
          JOIN playlists pl ON p.playlist_id = pl.id
          JOIN users u ON p.user_id = u.id  -- Join users table
 WHERE p.playlist_id = $1 AND  p.user_id = $2;
+
+-- name: GetTrackPlaylists :many
+-- param: TrackId text
+-- param: UserId bigint
+SELECT pl.id
+FROM playlists pl
+         JOIN playlist_permissions pp ON pl.id = pp.playlist_id
+WHERE
+    pp.user_id = sqlc.arg(user_id)
+  AND sqlc.arg(track_id)::text = ANY(pl.tracks);
 
 -- PLAYLISTS CRUD END
 

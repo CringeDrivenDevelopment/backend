@@ -14,8 +14,11 @@ type Playlist struct {
 	Thumbnail     string
 	Tracks        []string
 	AllowedTracks []string
-	Length        pgtype.Int4
-	AllowedLength pgtype.Int4
+	Count         pgtype.Int4
+	AllowedCount  pgtype.Int4
+	Type          string
+	Time          int32
+	AllowedTime   int32
 }
 
 type PlaylistPermission struct {

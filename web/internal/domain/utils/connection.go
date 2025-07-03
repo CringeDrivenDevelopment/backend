@@ -32,6 +32,15 @@ func NewConnection(ctx context.Context, connUrl string) (*pgxpool.Pool, error) {
 		queries.InitTracks(ctx),
 		queries.InitPlaylists(ctx),
 		queries.InitPermissions(ctx),
+		queries.InitTracksIndex(ctx),
+		queries.InitPermissionsIndex(ctx),
+		queries.InitPlaylistsTracksIndex(ctx),
+		queries.InitPlaylistsAllowedTracksIndex(ctx),
+		queries.InitCalculatePlaylistTime(ctx),
+		queries.InitUpdatePlaylistTimes(ctx),
+		queries.InitPlaylistTimesTrigger(ctx),
+		queries.InitUpdatePlaylistOnTrackChange(ctx),
+		queries.InitTrackUpdate(ctx),
 	)
 	if err != nil {
 		pool.Close()
