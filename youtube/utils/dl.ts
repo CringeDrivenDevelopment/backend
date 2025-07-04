@@ -1,5 +1,6 @@
 import {getCobalt} from "./cobalt.ts";
 import type {Metadata} from "./api.ts";
+import { mkdir } from "fs/promises";
 
 async function runCmd(cmd: string[]): Promise<number> {
     const ffmpeg = Bun.spawn({
@@ -15,6 +16,8 @@ export async function dl(cobaltUrl: string, id: string, metadata: Metadata): Pro
     const data = await getCobalt(cobaltUrl, id);
 
     console.log(data);
+
+    await mkdir(`./dl/${id}`, { recursive: true });
 
     const fixedFile = `./dl/${id}/audio.m4a`;
 
