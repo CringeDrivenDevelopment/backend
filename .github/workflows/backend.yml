@@ -40,7 +40,7 @@ jobs:
         uses: golangci/golangci-lint-action@v8
         with:
           version: v2.1
-          working-directory: ${{ matrix.project }}
+          working-directory: web
 
       - name: Extract metadata (tags, labels) for Docker
         id: meta

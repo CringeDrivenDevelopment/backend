@@ -162,6 +162,7 @@ func (s *TrackService) Submit(ctx context.Context, playlistId, trackId string, u
 		Thumbnail:     playlist.Thumbnail,
 		Tracks:        tracks,
 		AllowedTracks: allowedTracks,
+		Type:          playlist.Type,
 	})
 	if err != nil {
 		return err
