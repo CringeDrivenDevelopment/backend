@@ -1,7 +1,6 @@
 # Muse Backend
 
 ## API TODO:
-- перенести с cloudflare
 - Permissions + данные с тг (я сделаю, либо вместе) (след неделя)
 - playlist export (след неделя) (based on hash)
 - R2 под ассеты не под авторским правом (любой другой S3)
