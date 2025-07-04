@@ -57,7 +57,7 @@ func (s *YoutubeService) makeRequest(ctx context.Context, method string, endpoin
 }
 
 func (s *YoutubeService) Search(ctx context.Context, query string, userId int64) ([]dto.Track, error) {
-	resp, err := s.makeRequest(ctx, http.MethodGet, s.baseUrl+"/api/search?query="+url.QueryEscape(query))
+	resp, err := s.makeRequest(ctx, http.MethodGet, "/api/search?query="+url.QueryEscape(query))
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +128,7 @@ func (s *YoutubeService) Search(ctx context.Context, query string, userId int64)
 }
 
 func (s *YoutubeService) Download(ctx context.Context, id string) error {
-	resp, err := s.makeRequest(ctx, http.MethodPost, s.baseUrl+"/api/dl?id="+id)
+	resp, err := s.makeRequest(ctx, http.MethodPost, "/api/dl?id="+id)
 	if err != nil {
 		return err
 	}
