@@ -6,7 +6,6 @@ import (
 	"backend/internal/domain/dto"
 	"context"
 	"errors"
-	"fmt"
 	"github.com/bytedance/sonic"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -36,14 +35,29 @@ func NewYoutubeService(app *app.App) *YoutubeService {
 	}
 }
 
-func (s *YoutubeService) Search(ctx context.Context, query string, userId int64) ([]dto.Track, error) {
-	req, err := http.NewRequest(http.MethodGet, s.baseUrl+"/api/search?query="+url.QueryEscape(query), nil)
+func (s *YoutubeService) makeRequest(ctx context.Context, method string, endpoint string) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(ctx, method, s.baseUrl+endpoint, nil)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", s.authToken))
-
+	req.Header.Set("Authorization", "Bearer "+s.authToken)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
 	resp, err := s.client.Do(req)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New(resp.Status)
+	}
+
+	return resp, nil
+}
+
+func (s *YoutubeService) Search(ctx context.Context, query string, userId int64) ([]dto.Track, error) {
+	resp, err := s.makeRequest(ctx, http.MethodGet, s.baseUrl+"/api/search?query="+url.QueryEscape(query))
 	if err != nil {
 		return nil, err
 	}
@@ -113,5 +127,14 @@ func (s *YoutubeService) Search(ctx context.Context, query string, userId int64)
 	return data, nil
 }
 
-func (s *YoutubeService) Download(ctx context.Context, id string) {
+func (s *YoutubeService) Download(ctx context.Context, id string) error {
+	resp, err := s.makeRequest(ctx, http.MethodPost, s.baseUrl+"/api/dl?id="+id)
+	if err != nil {
+		return err
+	}
+	if err := resp.Body.Close(); err != nil {
+		return err
+	}
+
+	return nil
 }

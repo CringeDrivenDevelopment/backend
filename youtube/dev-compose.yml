@@ -1,0 +1,46 @@
+services:
+  cobalt:
+    image: ghcr.io/imputnet/cobalt:11
+    init: true
+    # read_only: true
+    restart: unless-stopped
+    container_name: cobalt
+    ports:
+      - "127.0.0.1:9000:9000"
+    environment:
+      API_URL: "http://localhost:9000/"
+      YOUTUBE_SESSION_SERVER: "http://yt-session-generator:8080"
+    depends_on:
+      yt-session-generator:
+        condition: service_healthy
+
+  yt-session-generator:
+    image: ghcr.io/chaotic-spire/yt-session-generator:main
+    restart: always
+    ports:
+      - "5910:5910"
+      - "8080:8080"
+    volumes:
+      - swayvnc-wayvnc-certs:/certs
+    environment:
+      #  - RENDER_GROUP_GID=107 # replace with GID of the group which owns the /dev/dri/renderD128 device
+      - SWAY_UNSUPPORTED_GPU=true
+      - SWAY_RESOLUTION=1280x720
+      - WAYVNC_PORT=5910
+      - WAYVNC_ENABLE_AUTH=true
+      - WAYVNC_USERNAME=wayvnc
+      - WAYVNC_PASSWORD=wayvnc
+      - VIRTUAL_GPU=true
+    # devices:
+    #   - /dev/dri
+    security_opt:
+      - seccomp:unconfined
+    healthcheck:
+      test: [ "CMD", "curl", "--fail", "http://localhost:8080/token" ]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+      start_period: 10s
+
+volumes:
+  swayvnc-wayvnc-certs:
