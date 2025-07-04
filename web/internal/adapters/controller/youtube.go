@@ -129,7 +129,7 @@ func (h *youtubeHandler) Setup(router huma.API, auth func(ctx huma.Context, next
 	huma.Register(router, huma.Operation{
 		OperationID: "youtube-dl",
 		Path:        "/api/youtube/{id}/dl",
-		Method:      http.MethodGet,
+		Method:      http.MethodPost,
 		Errors: []int{
 			400,
 			401,
