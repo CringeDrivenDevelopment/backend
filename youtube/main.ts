@@ -92,6 +92,20 @@ app.get('/api/dl/:id/:file', async (c) => {
     const blob = Bun.file(`./dl/${id}/${file}`);
     // check if exists
     if (!await blob.exists()) {
+        if (file == 'hls.m3u8') {
+            console.log(`Received dl request for id: ${id}`);
+
+            const metadata = await getMetadata(id);
+
+            if (metadata.length > 1200) {
+                c.status(403);
+                return c.json({});
+            }
+
+            dl(cobaltUrl, id, metadata).catch(err => {
+                console.error(err);
+            });
+        }
         c.status(404);
         return c.json({});
     }

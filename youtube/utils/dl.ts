@@ -5,7 +5,7 @@ import { mkdir } from "fs/promises";
 async function runCmd(cmd: string[]): Promise<number> {
     const ffmpeg = Bun.spawn({
         cmd: cmd,
-        stdout: 'inherit',
+        stdout: 'ignore',
         stderr: 'inherit',
     });
 
@@ -14,8 +14,6 @@ async function runCmd(cmd: string[]): Promise<number> {
 
 export async function dl(cobaltUrl: string, id: string, metadata: Metadata): Promise<void> {
     const data = await getCobalt(cobaltUrl, id);
-
-    console.log(data);
 
     await mkdir(`./dl/${id}`, { recursive: true });
 
@@ -36,14 +34,12 @@ export async function dl(cobaltUrl: string, id: string, metadata: Metadata): Pro
 
     console.log(audioCmd.join(' '));
 
-    const audio = await runCmd(audioCmd);
-
-    console.log(`${id} audio downloaded`);
+    const audio = runCmd(audioCmd);
 
     const hlsCmd = [
         'ffmpeg',
         '-y',
-        '-i', fixedFile,
+        '-i', data.url,
         '-c:a', 'aac',
         '-f', 'hls',
         '-vn',
@@ -55,7 +51,7 @@ export async function dl(cobaltUrl: string, id: string, metadata: Metadata): Pro
 
     console.log(hlsCmd.join(' '));
 
-    const hls = await runCmd(hlsCmd);
+    const hls = runCmd(hlsCmd);
 
-    console.log(`${id}: audio - ${audio}, hls - ${hls}`);
+    await Promise.all([audio, hls]);
 }
