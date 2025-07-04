@@ -48,7 +48,9 @@ func Setup(app *app.App) {
 	// Setup user routes
 	newUserHandler(app).Setup(app.Router)
 
-	newTracksHandler(app).Setup(app.Router, middlewareHandler.IsAuthenticated)
+	newYoutubeHandler(app).Setup(app.Router, middlewareHandler.IsAuthenticated)
 
 	newPlaylistsHandler(app).Setup(app.Router, middlewareHandler.IsAuthenticated)
+
+	newTrackHandler(app).Setup(app.Router, middlewareHandler.IsAuthenticated)
 }

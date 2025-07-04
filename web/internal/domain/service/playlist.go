@@ -19,14 +19,14 @@ type PlaylistService struct {
 /*
 CREATE TYPE playlist_role AS ENUM ('viewer', 'moderator', 'owner');
 */
-const viewerRole = "viewer"
-const moderatorRole = "moderator"
-const ownerRole = "owner"
+const ViewerRole = "viewer"
+const ModeratorRole = "moderator"
+const OwnerRole = "owner"
 
-var roles = []string{viewerRole, moderatorRole, ownerRole}
+var roles = []string{ViewerRole, ModeratorRole, OwnerRole}
 
-const SourceCustom = "custom"
-const SourceTg = "tg"
+const CustomSource = "custom"
+const TgSource = "tg"
 
 func NewPlaylistService(app *app.App) *PlaylistService {
 	return &PlaylistService{pool: app.DB}
@@ -48,7 +48,7 @@ func (s *PlaylistService) Create(ctx context.Context, title string, userId int64
 		Thumbnail:     "",
 		Tracks:        make([]string, 0),
 		AllowedTracks: make([]string, 0),
-		Type:          SourceCustom,
+		Type:          CustomSource,
 	}); err != nil {
 		if txErr := tx.Rollback(ctx); txErr != nil {
 			return dto.Playlist{}, txErr
@@ -59,7 +59,7 @@ func (s *PlaylistService) Create(ctx context.Context, title string, userId int64
 	err := queries.CreateRole(ctx, repository.CreateRoleParams{
 		PlaylistID: id,
 		UserID:     userId,
-		Role:       ownerRole,
+		Role:       OwnerRole,
 	})
 	if err != nil {
 		if txErr := tx.Rollback(ctx); txErr != nil {
@@ -83,8 +83,8 @@ func (s *PlaylistService) Create(ctx context.Context, title string, userId int64
 		Length:        0,
 		AllowedIds:    nil,
 		AllowedLength: 0,
-		Role:          ownerRole,
-		Type:          SourceCustom,
+		Role:          OwnerRole,
+		Type:          CustomSource,
 	}, nil
 }
 
@@ -139,60 +139,6 @@ func (s *PlaylistService) GetById(ctx context.Context, playlistId string, userId
 	}, nil
 }
 
-func (s *PlaylistService) SubmitTrack(ctx context.Context, playlistId, trackId string, userId int64) error {
-	tx, txErr := s.pool.BeginTx(ctx, pgx.TxOptions{})
-	if txErr != nil {
-		return txErr
-	}
-
-	queries := repository.New(tx)
-	playlist, err := queries.GetPlaylistById(ctx, repository.GetPlaylistByIdParams{
-		PlaylistID: playlistId,
-		UserID:     userId,
-	})
-	if err != nil {
-		return err
-	}
-
-	if _, err := queries.GetTrackById(ctx, trackId); err != nil {
-		if txErr := tx.Rollback(ctx); txErr != nil {
-			return txErr
-		}
-		return err
-	}
-
-	tracks := playlist.Tracks
-	allowedTracks := playlist.AllowedTracks
-	if (playlist.Role == ownerRole || playlist.Role == moderatorRole) && !slices.Contains(allowedTracks, trackId) {
-		tracks = append(tracks, trackId)
-		allowedTracks = append(allowedTracks, trackId)
-	} else if !slices.Contains(tracks, trackId) && playlist.Role == viewerRole {
-		tracks = append(tracks, trackId)
-	} else {
-		return nil
-	}
-
-	err = queries.EditPlaylist(ctx, repository.EditPlaylistParams{
-		ID:            playlistId,
-		Title:         playlist.Title,
-		Thumbnail:     playlist.Thumbnail,
-		Tracks:        tracks,
-		AllowedTracks: allowedTracks,
-	})
-	if err != nil {
-		return err
-	}
-
-	if err := tx.Commit(ctx); err != nil {
-		if txErr := tx.Rollback(ctx); txErr != nil {
-			return txErr
-		}
-		return err
-	}
-
-	return nil
-}
-
 func (s *PlaylistService) GetAll(ctx context.Context, userId int64) ([]dto.Playlist, error) {
 	queries := repository.New(s.pool)
 	playlists, err := queries.GetUserPlaylists(ctx, userId)
@@ -223,6 +169,49 @@ func (s *PlaylistService) GetAll(ctx context.Context, userId int64) ([]dto.Playl
 	}
 
 	return result, nil
+}
+
+func (s *PlaylistService) Rename(ctx context.Context, playlistId string, userId int64, title string) error {
+	tx, txErr := s.pool.BeginTx(ctx, pgx.TxOptions{})
+	if txErr != nil {
+		return txErr
+	}
+
+	queries := repository.New(tx)
+	playlist, err := queries.GetPlaylistById(ctx, repository.GetPlaylistByIdParams{
+		PlaylistID: playlistId,
+		UserID:     userId,
+	})
+	if err != nil {
+		return err
+	}
+
+	playlist.Title = title
+
+	err = queries.EditPlaylist(ctx, repository.EditPlaylistParams{
+		ID:            playlist.ID,
+		Title:         playlist.Title,
+		Thumbnail:     playlist.Thumbnail,
+		Tracks:        playlist.Tracks,
+		AllowedTracks: playlist.AllowedTracks,
+		Type:          playlist.Type,
+	})
+	if err != nil {
+		if txErr := tx.Rollback(ctx); txErr != nil {
+			return txErr
+		}
+		return err
+	}
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		if txErr := tx.Rollback(ctx); txErr != nil {
+			return txErr
+		}
+		return err
+	}
+
+	return nil
 }
 
 func (s *PlaylistService) Delete(ctx context.Context, playlistId string) error {

@@ -11,6 +11,8 @@ import (
 	"net/http"
 )
 
+// TODO: edit playlist title, check for changes if playlist is not custom
+
 type playlistHandler struct {
 	playlistService *service.PlaylistService
 }
@@ -55,24 +57,6 @@ func (h *playlistHandler) getById(ctx context.Context, input *struct {
 	return &struct{ Body dto.Playlist }{Body: resp}, nil
 }
 
-func (h *playlistHandler) submit(ctx context.Context, input *struct {
-	PlaylistId string `path:"id" minLength:"26" maxLength:"26" example:"01JZ35PYGP6HJA08H0NHYPBHWD" doc:"playlist id"`
-	Body       struct {
-		TrackId string `json:"track_id" minLength:"11" maxLength:"11" example:"dQw4w9WgXcQ"`
-	}
-}) (*struct{}, error) {
-	val, ok := ctx.Value(middlewares.UserJwtKey).(repository.User)
-	if !ok {
-		return nil, huma.Error500InternalServerError("User not found in context")
-	}
-
-	err := h.playlistService.SubmitTrack(ctx, input.PlaylistId, input.Body.TrackId, val.ID)
-	if err != nil {
-		return nil, huma.Error404NotFound("playlist not found", err)
-	}
-	return nil, nil
-}
-
 func (h *playlistHandler) delete(ctx context.Context, input *struct {
 	Id string `path:"id" minLength:"26" maxLength:"26" example:"01JZ35PYGP6HJA08H0NHYPBHWD" doc:"playlist id"`
 }) (*struct{}, error) {
@@ -81,9 +65,13 @@ func (h *playlistHandler) delete(ctx context.Context, input *struct {
 		return nil, huma.Error500InternalServerError("User not found in context")
 	}
 
-	_, err := h.playlistService.GetById(ctx, input.Id, val.ID)
+	playlist, err := h.playlistService.GetById(ctx, input.Id, val.ID)
 	if err != nil {
 		return nil, huma.Error404NotFound("playlist not found", err)
+	}
+
+	if playlist.Role != service.OwnerRole || playlist.Type != service.CustomSource {
+		return nil, huma.Error403Forbidden("you're not allowed to do this", err)
 	}
 
 	err = h.playlistService.Delete(ctx, input.Id)
@@ -156,33 +144,12 @@ func (h *playlistHandler) Setup(router huma.API, auth func(ctx huma.Context, nex
 	}, h.getById)
 
 	huma.Register(router, huma.Operation{
-		OperationID: "playlist-submit",
-		Path:        "/api/playlists/{id}/submit",
-		Method:      http.MethodPost,
-		Errors: []int{
-			401,
-			404,
-			500,
-		},
-		Tags: []string{
-			"playlist",
-		},
-		Summary:     "Add a track to playlist for a review (if role==viewer)",
-		Description: "TODO: Change",
-		Middlewares: huma.Middlewares{auth},
-		Security: []map[string][]string{
-			{
-				"jwt": []string{},
-			},
-		},
-	}, h.submit)
-
-	huma.Register(router, huma.Operation{
 		OperationID: "playlist-delete",
 		Path:        "/api/playlists/{id}",
 		Method:      http.MethodDelete,
 		Errors: []int{
 			401,
+			403,
 			404,
 			500,
 		},

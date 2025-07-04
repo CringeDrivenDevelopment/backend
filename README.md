@@ -9,7 +9,7 @@
 - R2 под ассеты не под авторским правом
 - перенести youtube и генератор в оргу
 - logger
-- change song id to ulid
+- normal errors
 
 ## Bot TODO
 - действия в чате/канале при добавлении
