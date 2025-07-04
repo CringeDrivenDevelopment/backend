@@ -1,7 +1,6 @@
 import {Hono} from "hono";
 import type {JwtVariables} from "hono/jwt";
 import {jwt} from "hono/jwt";
-import {stream} from "hono/streaming";
 import {getMetadata, search} from "./utils/api.ts";
 import {dl} from "./utils/dl.ts";
 
@@ -97,23 +96,12 @@ app.get('/api/dl/:id/:file', async (c) => {
         return c.json({});
     }
 
-    return stream(c, async (streamCtrl) => {
-        // if client aborts, log or clean up
-        streamCtrl.onAbort(() => {
-            console.log(`Download aborted: ${id}/${file}`);
-        })
+    const arrbuf = await blob.arrayBuffer();
+    const buffer = Buffer.from(arrbuf);
 
-        const reader = blob.stream().getReader();
-
-        try {
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break
-                // send each chunk (Uint8Array) downstream
-                await streamCtrl.write(value);
-            }
-        } finally {
-            await streamCtrl.close();
+    return c.body(buffer, {
+        headers: {
+            'Content-Type': 'application/octet-stream',
         }
     });
 });
