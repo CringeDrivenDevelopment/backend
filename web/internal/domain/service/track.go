@@ -3,6 +3,7 @@ package service
 import (
 	"backend/cmd/app"
 	"backend/internal/adapters/repository"
+	"backend/internal/domain/dto"
 	"context"
 	"errors"
 	"github.com/jackc/pgx/v5"
@@ -16,6 +17,23 @@ type TrackService struct {
 
 func NewTrackService(app *app.App) *TrackService {
 	return &TrackService{pool: app.DB}
+}
+
+func (s *TrackService) GetById(ctx context.Context, id string) (dto.Track, error) {
+	queries := repository.New(s.pool)
+	track, err := queries.GetTrackById(ctx, id)
+	if err != nil {
+		return dto.Track{}, err
+	}
+
+	return dto.Track{
+		Id:        track.ID,
+		Title:     track.Title,
+		Authors:   track.Authors,
+		Thumbnail: track.Thumbnail,
+		Length:    track.Length,
+		Explicit:  track.Explicit,
+	}, err
 }
 
 func (s *TrackService) Approve(ctx context.Context, playlistId, trackId string, userId int64) error {

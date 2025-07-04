@@ -133,8 +133,8 @@ func (h *trackHandler) Setup(router huma.API, auth func(ctx huma.Context, next f
 		Tags: []string{
 			"tracks",
 		},
-		Summary:     "Add a track to playlist",
-		Description: "If your role is viewer, you are putting track for review. If you're owner/moderator you're automatically adding track to allowed",
+		Summary:     "Add a trackService to playlist",
+		Description: "If your role is viewer, you are putting trackService for review. If you're owner/moderator you're automatically adding trackService to allowed",
 		Middlewares: huma.Middlewares{auth},
 		Security: []map[string][]string{
 			{
@@ -155,7 +155,7 @@ func (h *trackHandler) Setup(router huma.API, auth func(ctx huma.Context, next f
 		Tags: []string{
 			"tracks",
 		},
-		Summary:     "Remove allowed track from playlist",
+		Summary:     "Remove allowed trackService from playlist",
 		Description: "If your role is viewer, you are not allowed. If you're owner/moderator you can invoke this",
 		Middlewares: huma.Middlewares{auth},
 		Security: []map[string][]string{
@@ -177,7 +177,7 @@ func (h *trackHandler) Setup(router huma.API, auth func(ctx huma.Context, next f
 		Tags: []string{
 			"tracks",
 		},
-		Summary:     "Approve track in playlist",
+		Summary:     "Approve trackService in playlist",
 		Description: "If your role is viewer, you are not allowed. If you're owner/moderator you can invoke this",
 		Middlewares: huma.Middlewares{auth},
 		Security: []map[string][]string{
@@ -199,7 +199,7 @@ func (h *trackHandler) Setup(router huma.API, auth func(ctx huma.Context, next f
 		Tags: []string{
 			"tracks",
 		},
-		Summary:     "Decline a track in submissions",
+		Summary:     "Decline a trackService in submissions",
 		Description: "If your role is viewer, you are not allowed. If you're owner/moderator you can invoke this",
 		Middlewares: huma.Middlewares{auth},
 		Security: []map[string][]string{

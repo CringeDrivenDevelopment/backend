@@ -1,12 +1,10 @@
-const cobaltUrl = Bun.env.COBALT_URL ?? 'http://localhost:9000';
-
 export interface CobaltData {
     status: string;
     url: string;
     filename: string;
 }
 
-export async function getCobalt(id: string): Promise<CobaltData> {
+export async function getCobalt(cobaltUrl: string, id: string): Promise<CobaltData> {
     const resp = await fetch(cobaltUrl, {
         method: 'POST',
         headers: {

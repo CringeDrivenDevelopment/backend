@@ -9,6 +9,7 @@ if (secret === undefined || secret === '') {
     console.error('Missing JWT_SECRET');
     process.exit(1);
 }
+const cobaltUrl = Bun.env.COBALT_URL ?? 'http://localhost:9000';
 
 type Variables = JwtVariables;
 const app = new Hono<{ Variables: Variables }>();
@@ -40,7 +41,7 @@ app.get('/api/search', async (c) => {
         c.status(500);
         return c.json({
             error: error,
-        })
+        });
     }
 });
 
@@ -53,11 +54,22 @@ app.post('/api/dl', async (c) => {
 
     console.log(`Received dl request for id: ${id}`);
 
+    const blob = Bun.file(`./dl/${id}/hls.m3u8`);
+    // check if exists
+    if (await blob.exists()) {
+        return c.json({});
+    }
+
     const metadata = await getMetadata(id);
 
-    await dl(id, metadata);
+    if (metadata.length > 1200) {
+        c.status(403);
+        return c.json({});
+    }
 
-    return c.json({})
+    await dl(cobaltUrl, id, metadata);
+
+    return c.json({});
 });
 
 // handle files
@@ -85,11 +97,13 @@ app.get('/api/dl/:id/:file', async (c) => {
     const arrbuf = await blob.arrayBuffer();
     const buffer = Buffer.from(arrbuf);
 
+    // TODO: add streaming
+
     return c.body(buffer, {
         headers: {
             'Content-Type': 'application/octet-stream',
         }
     });
-})
+});
 
 export default app

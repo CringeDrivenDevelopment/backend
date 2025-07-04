@@ -11,8 +11,8 @@ async function runCmd(cmd: string[]): Promise<number> {
     return await ffmpeg.exited;
 }
 
-export async function dl(id: string, metadata: Metadata): Promise<void> {
-    const data = await getCobalt(id);
+export async function dl(cobaltUrl: string, id: string, metadata: Metadata): Promise<void> {
+    const data = await getCobalt(cobaltUrl, id);
 
     console.log(data);
 

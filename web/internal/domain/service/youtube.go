@@ -6,12 +6,14 @@ import (
 	"backend/internal/domain/dto"
 	"context"
 	"errors"
+	"fmt"
 	"github.com/bytedance/sonic"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"io"
 	"net/http"
 	"net/url"
+	"time"
 )
 
 type YoutubeService struct {
@@ -28,7 +30,9 @@ type searchError struct {
 
 func NewYoutubeService(app *app.App) *YoutubeService {
 	return &YoutubeService{
-		client:    &http.Client{},
+		client: &http.Client{
+			Timeout: time.Second * 10,
+		},
 		pool:      app.DB,
 		baseUrl:   app.Settings.YoutubeUrl,
 		authToken: app.Settings.YoutubeToken,
@@ -137,4 +141,13 @@ func (s *YoutubeService) Download(ctx context.Context, id string) error {
 	}
 
 	return nil
+}
+
+func (s *YoutubeService) Stream(ctx context.Context, id, file string) (io.ReadCloser, error) {
+	resp, err := s.makeRequest(ctx, http.MethodGet, fmt.Sprintf("/api/dl/%s/%s", id, file))
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.Body, nil
 }
