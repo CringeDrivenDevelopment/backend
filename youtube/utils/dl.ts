@@ -29,8 +29,8 @@ export async function dl(cobaltUrl: string, id: string, metadata: Metadata): Pro
         '-c:a', 'aac',
         '-vn',
         '-t', metadata.length.toString(),
-        '-metadata', `title="${metadata.title}"`,
-        '-metadata', `artist="${metadata.authors}"`,
+        '-metadata', `'title=${metadata.title}'`,
+        '-metadata', `'artist=${metadata.authors}'`,
         fixedFile,
     ];
 
