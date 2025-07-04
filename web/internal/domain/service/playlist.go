@@ -25,7 +25,8 @@ const ownerRole = "owner"
 
 var roles = []string{viewerRole, moderatorRole, ownerRole}
 
-const ytType = "youtube"
+const SourceCustom = "custom"
+const SourceTg = "tg"
 
 func NewPlaylistService(app *app.App) *PlaylistService {
 	return &PlaylistService{pool: app.DB}
@@ -47,7 +48,7 @@ func (s *PlaylistService) Create(ctx context.Context, title string, userId int64
 		Thumbnail:     "",
 		Tracks:        make([]string, 0),
 		AllowedTracks: make([]string, 0),
-		Type:          ytType,
+		Type:          SourceCustom,
 	}); err != nil {
 		if txErr := tx.Rollback(ctx); txErr != nil {
 			return dto.Playlist{}, txErr
@@ -83,7 +84,7 @@ func (s *PlaylistService) Create(ctx context.Context, title string, userId int64
 		AllowedIds:    nil,
 		AllowedLength: 0,
 		Role:          ownerRole,
-		Type:          ytType,
+		Type:          SourceCustom,
 	}, nil
 }
 

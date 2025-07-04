@@ -15,7 +15,7 @@ type MiddlewareHandler struct {
 	logger       *zap.Logger
 }
 
-const USER_JWT_KEY = "user"
+const UserJwtKey = "user"
 
 // NewMiddlewareHandler is a function that returns a new instance of MiddlewareHandler.
 func NewMiddlewareHandler(app *app.App) *MiddlewareHandler {
@@ -48,7 +48,7 @@ func (h *MiddlewareHandler) IsAuthenticated(ctx huma.Context, next func(ctx huma
 		return
 	}
 
-	ctx = huma.WithValue(ctx, USER_JWT_KEY, user)
+	ctx = huma.WithValue(ctx, UserJwtKey, user)
 
 	// Otherwise, just continue as normal.
 	next(ctx)

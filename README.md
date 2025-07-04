@@ -4,17 +4,12 @@
 - Permissions + данные с тг (я сделаю, либо вместе)
 - Streaming proxy (я сделаю, нужно кобальт просто настроить и сделать фикс длины через ффмпег)
 - Download to S3 on choose (song) (можешь ты попробовать)
-- Download to S3 on playlist export (можешь ты тоже попробовать, я сделаю пару ручек на жс бэке)
+- Download to S3 on playlist export ()
 - Комменты + Дока
 - R2 под ассеты не под авторским правом
 - перенести youtube и генератор в оргу
-- портануть генератор на го (можешь ты)
 - logger
-- портануть на S3
-- playlist type
 - change song id to ulid
-- show playlist time
-- show roles in playlists
 
 ## Bot TODO
 - действия в чате/канале при добавлении

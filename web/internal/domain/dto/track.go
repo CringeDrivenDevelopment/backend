@@ -1,9 +1,5 @@
 package dto
 
-type SearchInput struct {
-	Query string `query:"query"`
-}
-
 type Track struct {
 	Id          string   `json:"id"`
 	Title       string   `json:"title"`

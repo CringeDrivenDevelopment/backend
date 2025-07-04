@@ -21,10 +21,12 @@ func newTracksHandler(app *app.App) *tracksHandler {
 	}
 }
 
-func (h *tracksHandler) search(ctx context.Context, input *dto.SearchInput) (*struct {
+func (h *tracksHandler) search(ctx context.Context, input *struct {
+	Query string `query:"query"`
+}) (*struct {
 	Body []dto.Track
 }, error) {
-	val, ok := ctx.Value(middlewares.USER_JWT_KEY).(repository.User)
+	val, ok := ctx.Value(middlewares.UserJwtKey).(repository.User)
 	if !ok {
 		return nil, huma.Error500InternalServerError("User not found in context")
 	}
@@ -41,6 +43,20 @@ func (h *tracksHandler) search(ctx context.Context, input *dto.SearchInput) (*st
 
 	return &struct{ Body []dto.Track }{Body: search}, nil
 }
+
+/*
+func (h *tracksHandler) download(ctx context.Context, input *struct {
+	Id string `path:"id" minLength:"11" maxLength:"11"`
+}) (*struct {}, error) {
+	val, ok := ctx.Value(middlewares.UserJwtKey).(repository.User)
+	if !ok {
+		return nil, huma.Error500InternalServerError("User not found in context")
+	}
+	id := input.Id
+
+
+}
+*/
 
 func (h *tracksHandler) Setup(router huma.API, auth func(ctx huma.Context, next func(ctx huma.Context))) {
 	huma.Register(router, huma.Operation{

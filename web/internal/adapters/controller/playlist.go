@@ -26,7 +26,7 @@ func (h *playlistHandler) create(ctx context.Context, input *struct {
 }) (*struct {
 	Body dto.Playlist
 }, error) {
-	val, ok := ctx.Value(middlewares.USER_JWT_KEY).(repository.User)
+	val, ok := ctx.Value(middlewares.UserJwtKey).(repository.User)
 	if !ok {
 		return nil, huma.Error500InternalServerError("User not found in context")
 	}
@@ -43,7 +43,7 @@ func (h *playlistHandler) getById(ctx context.Context, input *struct {
 }) (*struct {
 	Body dto.Playlist
 }, error) {
-	val, ok := ctx.Value(middlewares.USER_JWT_KEY).(repository.User)
+	val, ok := ctx.Value(middlewares.UserJwtKey).(repository.User)
 	if !ok {
 		return nil, huma.Error500InternalServerError("User not found in context")
 	}
@@ -61,7 +61,7 @@ func (h *playlistHandler) submit(ctx context.Context, input *struct {
 		TrackId string `json:"track_id" minLength:"11" maxLength:"11" example:"dQw4w9WgXcQ"`
 	}
 }) (*struct{}, error) {
-	val, ok := ctx.Value(middlewares.USER_JWT_KEY).(repository.User)
+	val, ok := ctx.Value(middlewares.UserJwtKey).(repository.User)
 	if !ok {
 		return nil, huma.Error500InternalServerError("User not found in context")
 	}
@@ -76,7 +76,7 @@ func (h *playlistHandler) submit(ctx context.Context, input *struct {
 func (h *playlistHandler) delete(ctx context.Context, input *struct {
 	Id string `path:"id" minLength:"26" maxLength:"26" example:"01JZ35PYGP6HJA08H0NHYPBHWD" doc:"playlist id"`
 }) (*struct{}, error) {
-	val, ok := ctx.Value(middlewares.USER_JWT_KEY).(repository.User)
+	val, ok := ctx.Value(middlewares.UserJwtKey).(repository.User)
 	if !ok {
 		return nil, huma.Error500InternalServerError("User not found in context")
 	}
@@ -97,7 +97,7 @@ func (h *playlistHandler) delete(ctx context.Context, input *struct {
 func (h *playlistHandler) getAll(ctx context.Context, _ *struct{}) (*struct {
 	Body []dto.Playlist
 }, error) {
-	val, ok := ctx.Value(middlewares.USER_JWT_KEY).(repository.User)
+	val, ok := ctx.Value(middlewares.UserJwtKey).(repository.User)
 	if !ok {
 		return nil, huma.Error500InternalServerError("User not found in context")
 	}

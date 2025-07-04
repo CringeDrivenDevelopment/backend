@@ -112,3 +112,6 @@ func (s *YoutubeService) Search(ctx context.Context, query string, userId int64)
 
 	return data, nil
 }
+
+func (s *YoutubeService) Download(ctx context.Context, id string) {
+}
