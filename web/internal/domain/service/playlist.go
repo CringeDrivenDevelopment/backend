@@ -20,7 +20,7 @@ func NewPlaylistService(app *app.App) *PlaylistService {
 	return &PlaylistService{pool: app.DB}
 }
 
-func (s *PlaylistService) Create(ctx context.Context, title string, userId int64, source string) (dto.Playlist, error) {
+func (s *PlaylistService) Create(ctx context.Context, title string, source string) (dto.Playlist, error) {
 	tx, txErr := s.pool.BeginTx(ctx, pgx.TxOptions{})
 	if txErr != nil {
 		return dto.Playlist{}, txErr
@@ -38,18 +38,6 @@ func (s *PlaylistService) Create(ctx context.Context, title string, userId int64
 		AllowedTracks: make([]string, 0),
 		Type:          source,
 	}); err != nil {
-		if txErr := tx.Rollback(ctx); txErr != nil {
-			return dto.Playlist{}, txErr
-		}
-		return dto.Playlist{}, err
-	}
-
-	err := queries.CreateRole(ctx, repository.CreateRoleParams{
-		PlaylistID: id,
-		UserID:     userId,
-		Role:       OwnerRole,
-	})
-	if err != nil {
 		if txErr := tx.Rollback(ctx); txErr != nil {
 			return dto.Playlist{}, txErr
 		}

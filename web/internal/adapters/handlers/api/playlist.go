@@ -14,11 +14,15 @@ import (
 // TODO: edit playlist title, check for changes if playlist is not custom
 
 type playlistHandler struct {
-	playlistService *service.PlaylistService
+	playlistService   *service.PlaylistService
+	permissionService *service.PermissionService
 }
 
 func newPlaylistsHandler(app *app.App) *playlistHandler {
-	return &playlistHandler{playlistService: service.NewPlaylistService(app)}
+	return &playlistHandler{
+		playlistService:   service.NewPlaylistService(app),
+		permissionService: service.NewPermissionService(app),
+	}
 }
 
 func (h *playlistHandler) create(ctx context.Context, input *struct {
@@ -33,10 +37,15 @@ func (h *playlistHandler) create(ctx context.Context, input *struct {
 		return nil, huma.Error500InternalServerError("User not found in context")
 	}
 
-	resp, err := h.playlistService.Create(ctx, input.Body.Title, val.ID, service.CustomSource)
+	resp, err := h.playlistService.Create(ctx, input.Body.Title, service.CustomSource)
 	if err != nil {
-		return nil, err
+		return nil, huma.Error500InternalServerError("failed to create playlist", err)
 	}
+	err = h.permissionService.Add(ctx, service.OwnerRole, resp.Id, val.ID)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("failed to add playlist to user", err)
+	}
+
 	return &struct{ Body dto.Playlist }{Body: resp}, nil
 }
 

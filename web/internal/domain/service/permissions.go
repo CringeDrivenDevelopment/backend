@@ -18,7 +18,7 @@ func NewPermissionService(app *app.App) *PermissionService {
 	}
 }
 
-func (s *PlaylistService) Add(ctx context.Context, role, playlist string, userId int64) error {
+func (s *PermissionService) Add(ctx context.Context, role, playlist string, userId int64) error {
 	tx, txErr := s.pool.BeginTx(ctx, pgx.TxOptions{})
 	if txErr != nil {
 		return txErr
@@ -50,7 +50,7 @@ func (s *PlaylistService) Add(ctx context.Context, role, playlist string, userId
 	return nil
 }
 
-func (s *PlaylistService) Remove(ctx context.Context, playlist string, userId int64) error {
+func (s *PermissionService) Remove(ctx context.Context, playlist string, userId int64) error {
 	tx, txErr := s.pool.BeginTx(ctx, pgx.TxOptions{})
 	if txErr != nil {
 		return txErr
@@ -81,7 +81,7 @@ func (s *PlaylistService) Remove(ctx context.Context, playlist string, userId in
 	return nil
 }
 
-func (s *PlaylistService) Edit(ctx context.Context, role, playlist string, userId int64) error {
+func (s *PermissionService) Edit(ctx context.Context, role, playlist string, userId int64) error {
 	tx, txErr := s.pool.BeginTx(ctx, pgx.TxOptions{})
 	if txErr != nil {
 		return txErr
@@ -112,4 +112,17 @@ func (s *PlaylistService) Edit(ctx context.Context, role, playlist string, userI
 	}
 
 	return nil
+}
+
+func (s *PermissionService) Get(ctx context.Context, userId int64, role string) (string, error) {
+	queries := repository.New(s.pool)
+	playlistId, err := queries.GetRole(ctx, repository.GetRoleParams{
+		Role:   role,
+		UserID: userId,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return playlistId, nil
 }

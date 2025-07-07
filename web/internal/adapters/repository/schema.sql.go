@@ -260,6 +260,23 @@ func (q *Queries) GetPlaylistById(ctx context.Context, arg GetPlaylistByIdParams
 	return i, err
 }
 
+const getRole = `-- name: GetRole :one
+SELECT playlist_id FROM playlist_permissions
+WHERE user_id = $1 AND role = $2
+`
+
+type GetRoleParams struct {
+	UserID int64
+	Role   string
+}
+
+func (q *Queries) GetRole(ctx context.Context, arg GetRoleParams) (string, error) {
+	row := q.db.QueryRow(ctx, getRole, arg.UserID, arg.Role)
+	var playlist_id string
+	err := row.Scan(&playlist_id)
+	return playlist_id, err
+}
+
 const getTrackById = `-- name: GetTrackById :one
 SELECT id, title, authors, thumbnail, length, explicit FROM tracks WHERE id = $1
 `
