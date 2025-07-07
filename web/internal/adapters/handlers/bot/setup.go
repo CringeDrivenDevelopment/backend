@@ -6,7 +6,6 @@ import (
 	"github.com/celestix/gotgproto"
 	"github.com/celestix/gotgproto/dispatcher/handlers"
 	"github.com/celestix/gotgproto/sessionMaker"
-	"github.com/glebarez/sqlite"
 	"github.com/gotd/td/telegram/dcs"
 	"go.uber.org/zap"
 )
@@ -35,7 +34,9 @@ func New(app *app.App) (*Bot, error) {
 		&gotgproto.ClientOpts{
 			DCList:           dcList,
 			DisableCopyright: true,
-			Session:          sessionMaker.SqlSession(sqlite.Open("cache/muse-bot.db")),
+			InMemory:         true,
+			Session:          sessionMaker.SimpleSession(),
+			// Session:          sessionMaker.SqlSession(sqlite.Open("cache/muse-bot.db")),
 		},
 	)
 	if err != nil {
