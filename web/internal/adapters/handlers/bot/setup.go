@@ -35,7 +35,7 @@ func New(app *app.App) (*Bot, error) {
 		&gotgproto.ClientOpts{
 			DCList:           dcList,
 			DisableCopyright: true,
-			Session:          sessionMaker.SqlSession(sqlite.Open("muse-bot.db")),
+			Session:          sessionMaker.SqlSession(sqlite.Open("cache/muse-bot.db")),
 		},
 	)
 	if err != nil {
