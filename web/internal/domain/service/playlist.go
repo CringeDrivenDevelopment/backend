@@ -16,23 +16,11 @@ type PlaylistService struct {
 	pool *pgxpool.Pool
 }
 
-/*
-CREATE TYPE playlist_role AS ENUM ('viewer', 'moderator', 'owner');
-*/
-const ViewerRole = "viewer"
-const ModeratorRole = "moderator"
-const OwnerRole = "owner"
-
-var roles = []string{ViewerRole, ModeratorRole, OwnerRole}
-
-const CustomSource = "custom"
-const TgSource = "tg"
-
 func NewPlaylistService(app *app.App) *PlaylistService {
 	return &PlaylistService{pool: app.DB}
 }
 
-func (s *PlaylistService) Create(ctx context.Context, title string, userId int64) (dto.Playlist, error) {
+func (s *PlaylistService) Create(ctx context.Context, title string, userId int64, source string) (dto.Playlist, error) {
 	tx, txErr := s.pool.BeginTx(ctx, pgx.TxOptions{})
 	if txErr != nil {
 		return dto.Playlist{}, txErr
@@ -48,7 +36,7 @@ func (s *PlaylistService) Create(ctx context.Context, title string, userId int64
 		Thumbnail:     "",
 		Tracks:        make([]string, 0),
 		AllowedTracks: make([]string, 0),
-		Type:          CustomSource,
+		Type:          source,
 	}); err != nil {
 		if txErr := tx.Rollback(ctx); txErr != nil {
 			return dto.Playlist{}, txErr
@@ -84,7 +72,7 @@ func (s *PlaylistService) Create(ctx context.Context, title string, userId int64
 		AllowedIds:    nil,
 		AllowedLength: 0,
 		Role:          OwnerRole,
-		Type:          CustomSource,
+		Type:          source,
 	}, nil
 }
 

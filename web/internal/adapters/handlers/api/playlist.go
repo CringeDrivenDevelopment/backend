@@ -1,8 +1,8 @@
-package controller
+package api
 
 import (
 	"backend/cmd/app"
-	"backend/internal/adapters/controller/middlewares"
+	"backend/internal/adapters/handlers/api/middlewares"
 	"backend/internal/adapters/repository"
 	"backend/internal/domain/dto"
 	"backend/internal/domain/service"
@@ -33,7 +33,7 @@ func (h *playlistHandler) create(ctx context.Context, input *struct {
 		return nil, huma.Error500InternalServerError("User not found in context")
 	}
 
-	resp, err := h.playlistService.Create(ctx, input.Body.Title, val.ID)
+	resp, err := h.playlistService.Create(ctx, input.Body.Title, val.ID, service.CustomSource)
 	if err != nil {
 		return nil, err
 	}

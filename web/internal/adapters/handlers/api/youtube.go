@@ -1,8 +1,8 @@
-package controller
+package api
 
 import (
 	"backend/cmd/app"
-	"backend/internal/adapters/controller/middlewares"
+	"backend/internal/adapters/handlers/api/middlewares"
 	"backend/internal/adapters/repository"
 	"backend/internal/domain/dto"
 	"backend/internal/domain/service"

@@ -1,8 +1,8 @@
-package controller
+package api
 
 import (
 	"backend/cmd/app"
-	"backend/internal/adapters/controller/validator"
+	"backend/internal/adapters/handlers/api/validator"
 	"backend/internal/adapters/repository"
 	"backend/internal/domain/dto"
 	"backend/internal/domain/service"

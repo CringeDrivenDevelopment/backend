@@ -11,13 +11,17 @@ type Settings struct {
 	// Example - "postgres://username:password@localhost:5432/database_name"
 	DbUrl          string
 	JwtSecret      string   `env:"JWT_SECRET"`
-	BotTokens      []string `env:"BOT_TOKENS"`
+	VerifiedTokens []string `env:"VERIFIED_BOT_TOKENS"`
 	YoutubeUrl     string   `env:"YOUTUBE_URL" env-default:"https://yt.lxft.tech"`
 	YoutubeToken   string   `env:"YOUTUBE_TOKEN"`
 	MinioBucket    string   `env:"MINIO_BUCKET" env-default:"music"`
 	MinioHost      string   `env:"MINIO_HOST" env-default:"localhost:9000"`
 	MinioSecretKey string   `env:"MINIO_SECRET_KEY" env-default:"minioadmin"`
 	MinioAccessKey string   `env:"MINIO_ACCESS_KEY" env-default:"minioadmin"`
+	Debug          bool     `env:"DEBUG" env-default:"false"`
+	AppHash        string   `env:"APP_HASH"`
+	AppId          int      `env:"APP_ID"`
+	BotToken       string   `env:"BOT_TOKEN"`
 
 	DbHost     string `env:"POSTGRES_HOST" env-default:"localhost"`
 	DbPort     string `env:"POSTGRES_PORT" env-default:"5432"`
@@ -42,8 +46,20 @@ func New() (*Settings, error) {
 		return nil, errors.New("YOUTUBE_TOKEN is REQUIRED not to be null")
 	}
 
-	if len(cfg.BotTokens) == 0 {
-		return nil, errors.New("BOT_TOKENS are REQUIRED not to be null")
+	if len(cfg.VerifiedTokens) == 0 {
+		return nil, errors.New("VERIFIED_BOT_TOKENS are REQUIRED not to be null")
+	}
+
+	if cfg.AppHash == "" {
+		return nil, errors.New("APP_HASH is REQUIRED not to be null")
+	}
+
+	if cfg.AppId == 0 {
+		return nil, errors.New("APP_ID is REQUIRED not to be null")
+	}
+
+	if cfg.BotToken == "" {
+		return nil, errors.New("BOT_TOKEN is REQUIRED not to be null")
 	}
 
 	return &cfg, nil

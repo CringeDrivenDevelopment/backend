@@ -2,7 +2,7 @@ package app
 
 import (
 	"backend/internal/adapters/config"
-	"backend/internal/adapters/controller/validator"
+	"backend/internal/adapters/handlers/api/validator"
 	"backend/internal/domain/utils"
 	"context"
 	"github.com/bytedance/sonic"
@@ -78,16 +78,18 @@ func New(logger *zap.Logger) (*App, error) {
 		return nil, err
 	}
 
-	requestValidator := validator.New(cfg.BotTokens)
+	requestValidator := validator.New(cfg.VerifiedTokens)
 
-	return &App{
+	result := &App{
 		Server:    router,
 		Router:    api,
 		DB:        conn,
 		Validator: requestValidator,
 		Logger:    logger,
 		Settings:  cfg,
-	}, nil
+	}
+
+	return result, nil
 }
 
 // Start is a function that starts the app
@@ -99,9 +101,9 @@ func (a *App) Start() error {
 	return nil
 }
 
-func (a *App) Shutdown() error {
+func (a *App) Stop() error {
 	a.Logger.Info("stopping server")
-	err := a.Server.Close()
+	err := a.Server.Shutdown(context.Background())
 	if err != nil {
 		return err
 	}

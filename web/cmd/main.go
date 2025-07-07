@@ -2,11 +2,18 @@ package main
 
 import (
 	"backend/cmd/app"
-	"backend/internal/adapters/controller"
+	"backend/internal/adapters/handlers/api"
+	"backend/internal/adapters/handlers/bot"
 	"go.uber.org/zap"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 func main() {
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
 	logger, err := zap.NewProduction()
 	if err != nil {
 		panic(err)
@@ -17,19 +24,45 @@ func main() {
 	mainApp, err := app.New(logger)
 	if err != nil {
 		logger.Panic(err.Error())
+		return
 	}
 
-	if mainApp == nil {
-		logger.Panic("mainApp is nil")
+	botApp, err := bot.New(mainApp)
+	if err != nil {
+		logger.Panic(err.Error())
+		return
 	}
 
 	logger.Info("app initialized")
 
-	controller.Setup(mainApp)
+	api.Setup(mainApp)
+	botApp.Setup()
 
 	logger.Info("endpoints mapped")
-	err = mainApp.Start()
+
+	go func() {
+		err := botApp.Start()
+		if err != nil {
+			logger.Info(err.Error())
+		}
+	}()
+
+	go func() {
+		err := mainApp.Start()
+		if err != nil {
+			logger.Info(err.Error())
+		}
+
+	}()
+
+	<-sigChan
+
+	botApp.Stop()
+	err = mainApp.Stop()
 	if err != nil {
 		logger.Panic(err.Error())
 	}
+	mainApp.DB.Close()
+
+	logger.Info("server stopped")
 }

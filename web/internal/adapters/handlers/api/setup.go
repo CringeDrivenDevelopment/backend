@@ -1,8 +1,8 @@
-package controller
+package api
 
 import (
 	"backend/cmd/app"
-	"backend/internal/adapters/controller/middlewares"
+	"backend/internal/adapters/handlers/api/middlewares"
 	"backend/internal/domain/dto"
 	"context"
 	"github.com/danielgtaylor/huma/v2"
