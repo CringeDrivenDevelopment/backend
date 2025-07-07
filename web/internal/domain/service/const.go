@@ -3,11 +3,14 @@ package service
 /*
 CREATE TYPE playlist_role AS ENUM ('viewer', 'moderator', 'owner');
 */
-const ViewerRole = "viewer"
-const ModeratorRole = "moderator"
-const OwnerRole = "owner"
+const (
+	GroupRole     = "group"
+	ViewerRole    = "viewer"
+	ModeratorRole = "moderator"
+	OwnerRole     = "owner"
+
+	CustomSource = "custom"
+	TgSource     = "tg"
+)
 
 var roles = []string{ViewerRole, ModeratorRole, OwnerRole}
-
-const CustomSource = "custom"
-const TgSource = "tg"

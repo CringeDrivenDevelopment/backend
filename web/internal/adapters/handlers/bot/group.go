@@ -11,32 +11,45 @@ func (b *Bot) handleGroup(context *ext.Context, update *ext.Update) error {
 		return nil
 	}
 
-	println("prev: ")
+	prev := ""
 	switch val.PrevParticipant.(type) {
 	case *tg.ChannelParticipant:
-		println("member")
+		prev = "member"
 	case *tg.ChannelParticipantSelf:
-		println("self")
+		prev = "self"
 	case *tg.ChannelParticipantCreator:
-		println("creator")
+		prev = "creator"
 	case *tg.ChannelParticipantAdmin:
-		println("admin")
+		prev = "admin"
 	default:
-		println("left")
+		prev = "left"
 	}
 
-	println("new: ")
+	curr := ""
 	switch val.NewParticipant.(type) {
 	case *tg.ChannelParticipant:
-		println("member")
+		curr = "member"
 	case *tg.ChannelParticipantSelf:
-		println("self")
+		curr = "self"
 	case *tg.ChannelParticipantCreator:
-		println("creator")
+		curr = "creator"
 	case *tg.ChannelParticipantAdmin: // channelParticipantAdmin#34c3bb53
-		println("admin")
+		curr = "admin"
 	default:
-		println("left")
+		curr = "left"
+	}
+
+	if prev == "left" && curr == "self" {
+		_, err := context.SendMessage(val.ChannelID, &tg.MessagesSendMessageRequest{Message: "дай админку пж"})
+		return err
+	}
+
+	if prev == "self" && curr == "admin" {
+		_, err := context.SendMessage(val.ChannelID, &tg.MessagesSendMessageRequest{Message: "респект за админку"})
+		if err != nil {
+			return err
+		}
+
 	}
 
 	// todo: if self -> left = delete group
