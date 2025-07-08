@@ -14,19 +14,19 @@ func (b *Bot) handleGroup(ctx *ext.Context, update *ext.Update) error {
 
 	prev := ""
 	var id int64
-	switch val.PrevParticipant.(type) {
+	switch p := val.PrevParticipant.(type) {
 	case *tg.ChannelParticipant:
 		prev = "member"
-		id = val.PrevParticipant.(*tg.ChannelParticipant).UserID
+		id = p.UserID
 	case *tg.ChannelParticipantSelf:
 		prev = "self"
-		id = val.PrevParticipant.(*tg.ChannelParticipantSelf).UserID
+		id = p.UserID
 	case *tg.ChannelParticipantCreator:
 		prev = "creator"
-		id = val.PrevParticipant.(*tg.ChannelParticipantCreator).UserID
+		id = p.UserID
 	case *tg.ChannelParticipantAdmin:
 		prev = "admin"
-		id = val.PrevParticipant.(*tg.ChannelParticipantAdmin).UserID
+		id = p.UserID
 	default:
 		prev = "left"
 	}
@@ -39,7 +39,7 @@ func (b *Bot) handleGroup(ctx *ext.Context, update *ext.Update) error {
 		curr = "self"
 	case *tg.ChannelParticipantCreator:
 		curr = "creator"
-	case *tg.ChannelParticipantAdmin: // channelParticipantAdmin#34c3bb53
+	case *tg.ChannelParticipantAdmin:
 		curr = "admin"
 	default:
 		curr = "left"

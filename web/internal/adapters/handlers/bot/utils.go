@@ -61,15 +61,15 @@ func (b *Bot) iterateParticipants(ctx context.Context, chanel *tg.InputChannel, 
 			var userId int64
 			var role string
 
-			switch participant.(type) {
+			switch p := participant.(type) {
 			case *tg.ChannelParticipant:
-				userId = participant.(*tg.ChannelParticipant).UserID
+				userId = p.UserID
 				role = service.ViewerRole
 			case *tg.ChannelParticipantCreator:
-				userId = participant.(*tg.ChannelParticipantCreator).UserID
+				userId = p.UserID
 				role = service.OwnerRole
 			case *tg.ChannelParticipantAdmin:
-				userId = participant.(*tg.ChannelParticipantAdmin).UserID
+				userId = p.UserID
 				role = service.ModeratorRole
 			default:
 				continue
@@ -100,15 +100,13 @@ func (b *Bot) getChatInfo(ctx context.Context, inputChannel *tg.InputChannel) (*
 	}
 
 	chatResult := full.Chats[0]
-	switch chatResult.(type) {
+	switch result := chatResult.(type) {
 	case *tg.Channel:
-		result := chatResult.(*tg.Channel)
 		return &chat{
 			title: result.Title,
 			photo: result.Photo,
 		}, nil
 	case *tg.Chat:
-		result := chatResult.(*tg.Chat)
 		return &chat{
 			title: result.Title,
 			photo: result.Photo,
