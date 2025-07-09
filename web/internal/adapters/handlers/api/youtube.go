@@ -178,12 +178,14 @@ func (h *youtubeHandler) Setup(router huma.API, auth func(ctx huma.Context, next
 		},
 		Summary:     "Get music file",
 		Description: "Get file by filename",
+		/* // TODO: ADD LATER, IMPORTANT, ASAP
 		Middlewares: huma.Middlewares{auth},
-		Security: []map[string][]string{
-			{
-				"jwt": []string{},
+			Security: []map[string][]string{
+				{
+					"jwt": []string{},
+				},
 			},
-		},
+		*/
 	}, h.streamMusic)
 
 	huma.Register(router, huma.Operation{
