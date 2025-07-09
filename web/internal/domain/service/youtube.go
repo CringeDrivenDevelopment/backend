@@ -91,6 +91,9 @@ func (s *YoutubeService) Search(ctx context.Context, query string, userId int64)
 
 	searchQueries := repository.New(s.pool)
 	trackTx, err := s.pool.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return nil, err
+	}
 	trackQueries := repository.New(trackTx)
 
 	for i, track := range data {
