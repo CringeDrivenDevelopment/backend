@@ -29,6 +29,12 @@ export interface Metadata {
     thumbnail: string;
 }
 
+function bumpThumbnailSize(url: string, fromSize = 120, toSize = 544) {
+    // Build a regex that matches "w<from>-h<from>" only if it's right before "-l...-rj" at the end
+    const re = new RegExp(`w${fromSize}-h${fromSize}(?=-l\\d+-rj$)`);
+    return url.replace(re, `w${toSize}-h${toSize}`);
+}
+
 export async function search(query: string): Promise<Awaited<Track>[]> {
     const search = await innertube.music.search(decodeURI(query), {
         type: 'song'
@@ -40,7 +46,7 @@ export async function search(query: string): Promise<Awaited<Track>[]> {
 
     return await Promise.all(search.songs.contents.map(async song => {
         const authors = song.artists?.map(x => x.name).join(', ')!;
-        const thumbnail = song.thumbnail?.contents[song.thumbnails!.length - 1]?.url!;
+        const thumbnail = bumpThumbnailSize(song.thumbnail?.contents?.at(0)!.url!);
         const info = await innertube.getInfo(song.id!);
         const length = info.basic_info.duration!;
         const explicit = song.badges?.find(item => {
@@ -63,7 +69,7 @@ export async function getMetadata(id: string): Promise<Metadata> {
     const song = await innertube.music.getInfo(id);
 
     const authors = song.basic_info.author ?? '';
-    const thumbnail = song.basic_info.thumbnail?.at(song.basic_info.thumbnail!.length - 1)!.url!;
+    const thumbnail = bumpThumbnailSize(song.basic_info.thumbnail?.at(0)!.url!);
     const info = await innertube.getInfo(id);
     const length = info.basic_info.duration!;
 
