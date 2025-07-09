@@ -66,7 +66,7 @@ export async function dl(cobaltUrl: string, id: string, metadata: Metadata): Pro
         '-c:a', 'aac',
         '-f', 'hls',
         '-vn',
-        '-ss', (metadata.length / 2).toString(),
+        '-ss', (Math.floor(metadata.length / 2)).toString(),
         '-t', '10',
         '-hls_playlist_type', 'vod',
         '-hls_segment_filename', `./dl/${id}/segment_%03d.ts`,
