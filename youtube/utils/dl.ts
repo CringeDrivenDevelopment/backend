@@ -50,8 +50,8 @@ export async function dl(cobaltUrl: string, id: string, metadata: Metadata): Pro
         '-c:a', 'aac',
         '-c:v', 'copy',
         '-t', metadata.length.toString(),
-        '-metadata', `title=${metadata.title.replaceAll(' ', '\\ ')}`,
-        '-metadata', `artist=${metadata.authors.replaceAll(' ', '\\ ')}`,
+        '-metadata', `title=${metadata.title.replaceAll(' ', '\ ')}`,
+        '-metadata', `artist=${metadata.authors.replaceAll(' ', '\ ')}`,
         fixedFile,
     ];
 
