@@ -65,7 +65,7 @@ app.post('/api/archive', async (c) => {
     }
 
     return c.json({
-        filename: `./dl/${archiveName}`,
+        filename: archiveName,
     });
 });
 
