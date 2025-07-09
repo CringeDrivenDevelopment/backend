@@ -29,14 +29,20 @@ func (s *UserService) Create(ctx context.Context, params repository.CreateUserPa
 	queries := repository.New(tx)
 
 	if err := queries.CreateUser(ctx, params); err != nil {
-		txErr := tx.Rollback(ctx)
-		if txErr != nil {
+		if txErr := tx.Rollback(ctx); txErr != nil {
 			return txErr
 		}
 		return err
 	}
 
-	return tx.Commit(ctx)
+	if err := tx.Commit(ctx); err != nil {
+		if txErr := tx.Rollback(ctx); txErr != nil {
+			return txErr
+		}
+		return err
+	}
+
+	return nil
 }
 
 func (s *UserService) GetByID(ctx context.Context, id int64) (repository.User, error) {

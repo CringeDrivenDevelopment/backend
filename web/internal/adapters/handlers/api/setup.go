@@ -6,6 +6,7 @@ import (
 	"backend/internal/domain/dto"
 	"context"
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/labstack/echo-contrib/pprof"
 	"github.com/labstack/echo/v4/middleware"
 	"net/http"
 )
@@ -19,6 +20,8 @@ func Setup(app *app.App) {
 			"http://localhost",
 		},
 	}))
+
+	pprof.Register(app.Server)
 
 	// log all requests
 	// TODO: to zap logger

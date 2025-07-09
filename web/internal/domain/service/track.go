@@ -8,18 +8,15 @@ import (
 	"errors"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"go.uber.org/zap"
 	"slices"
 )
 
 type TrackService struct {
 	pool *pgxpool.Pool
-
-	logger *zap.Logger
 }
 
 func NewTrackService(app *app.App) *TrackService {
-	return &TrackService{pool: app.DB, logger: app.Logger}
+	return &TrackService{pool: app.DB}
 }
 
 func (s *TrackService) GetById(ctx context.Context, id string) (dto.Track, error) {
