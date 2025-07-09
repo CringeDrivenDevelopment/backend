@@ -3,7 +3,6 @@ package api
 import (
 	"backend/cmd/app"
 	"backend/internal/adapters/handlers/api/middlewares"
-	"backend/internal/adapters/repository"
 	"backend/internal/domain/dto"
 	"backend/internal/domain/service"
 	"context"
@@ -34,7 +33,7 @@ func (h *playlistHandler) create(ctx context.Context, input *struct {
 }) (*struct {
 	Body dto.Playlist
 }, error) {
-	val, ok := ctx.Value(middlewares.UserJwtKey).(repository.User)
+	val, ok := ctx.Value(middlewares.UserJwtKey).(int64)
 	if !ok {
 		return nil, huma.Error500InternalServerError("User not found in context")
 	}
@@ -43,7 +42,7 @@ func (h *playlistHandler) create(ctx context.Context, input *struct {
 	if err != nil {
 		return nil, huma.Error500InternalServerError("failed to create playlist", err)
 	}
-	err = h.permissionService.Add(ctx, service.OwnerRole, resp.Id, val.ID)
+	err = h.permissionService.Add(ctx, service.OwnerRole, resp.Id, val)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("failed to add playlist to user", err)
 	}
@@ -56,12 +55,12 @@ func (h *playlistHandler) getById(ctx context.Context, input *struct {
 }) (*struct {
 	Body dto.Playlist
 }, error) {
-	val, ok := ctx.Value(middlewares.UserJwtKey).(repository.User)
+	val, ok := ctx.Value(middlewares.UserJwtKey).(int64)
 	if !ok {
 		return nil, huma.Error500InternalServerError("User not found in context")
 	}
 
-	resp, err := h.playlistService.GetById(ctx, input.Id, val.ID)
+	resp, err := h.playlistService.GetById(ctx, input.Id, val)
 	if err != nil {
 		return nil, huma.Error404NotFound("playlist not found", err)
 	}
@@ -73,12 +72,12 @@ func (h *playlistHandler) download(ctx context.Context, input *struct {
 }) (*struct {
 	Body dto.Archive
 }, error) {
-	val, ok := ctx.Value(middlewares.UserJwtKey).(repository.User)
+	val, ok := ctx.Value(middlewares.UserJwtKey).(int64)
 	if !ok {
 		return nil, huma.Error500InternalServerError("User not found in context")
 	}
 
-	resp, err := h.playlistService.GetById(ctx, input.Id, val.ID)
+	resp, err := h.playlistService.GetById(ctx, input.Id, val)
 	if err != nil {
 		return nil, huma.Error404NotFound("playlist not found", err)
 	}
@@ -94,12 +93,12 @@ func (h *playlistHandler) download(ctx context.Context, input *struct {
 func (h *playlistHandler) delete(ctx context.Context, input *struct {
 	Id string `path:"id" minLength:"26" maxLength:"26" example:"01JZ35PYGP6HJA08H0NHYPBHWD" doc:"playlist id"`
 }) (*struct{}, error) {
-	val, ok := ctx.Value(middlewares.UserJwtKey).(repository.User)
+	val, ok := ctx.Value(middlewares.UserJwtKey).(int64)
 	if !ok {
 		return nil, huma.Error500InternalServerError("User not found in context")
 	}
 
-	playlist, err := h.playlistService.GetById(ctx, input.Id, val.ID)
+	playlist, err := h.playlistService.GetById(ctx, input.Id, val)
 	if err != nil {
 		return nil, huma.Error404NotFound("playlist not found", err)
 	}
@@ -119,12 +118,12 @@ func (h *playlistHandler) delete(ctx context.Context, input *struct {
 func (h *playlistHandler) getAll(ctx context.Context, _ *struct{}) (*struct {
 	Body []dto.Playlist
 }, error) {
-	val, ok := ctx.Value(middlewares.UserJwtKey).(repository.User)
+	val, ok := ctx.Value(middlewares.UserJwtKey).(int64)
 	if !ok {
 		return nil, huma.Error500InternalServerError("User not found in context")
 	}
 
-	resp, err := h.playlistService.GetAll(ctx, val.ID)
+	resp, err := h.playlistService.GetAll(ctx, val)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Playlists not found", err)
 	}

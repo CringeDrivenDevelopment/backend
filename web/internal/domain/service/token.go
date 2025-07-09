@@ -20,7 +20,7 @@ func NewTokenService(secret string, expires time.Duration) *TokenService {
 	return &TokenService{secret: secret, expires: expires}
 }
 
-func (s *TokenService) verifyToken(authHeader string) (int64, error) {
+func (s *TokenService) VerifyToken(authHeader string) (int64, error) {
 	tokenStr := strings.TrimSpace(strings.TrimPrefix(authHeader, "Bearer "))
 	if tokenStr == "" {
 		return 0, errors.New("auth header is empty")
@@ -69,7 +69,7 @@ func (s *TokenService) GenerateToken(userID int64) (string, error) {
 }
 
 func (s *TokenService) GetUserFromJWT(jwt string, context context.Context, getUser func(context.Context, int64) (repository.User, error)) (repository.User, error) {
-	id, errVerify := s.verifyToken(jwt)
+	id, errVerify := s.VerifyToken(jwt)
 	if errVerify != nil {
 		return repository.User{}, errVerify
 	}

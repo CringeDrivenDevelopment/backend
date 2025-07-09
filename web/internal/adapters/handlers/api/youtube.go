@@ -3,7 +3,6 @@ package api
 import (
 	"backend/cmd/app"
 	"backend/internal/adapters/handlers/api/middlewares"
-	"backend/internal/adapters/repository"
 	"backend/internal/domain/dto"
 	"backend/internal/domain/service"
 	"context"
@@ -30,7 +29,7 @@ func (h *youtubeHandler) search(ctx context.Context, input *struct {
 }) (*struct {
 	Body []dto.Track
 }, error) {
-	val, ok := ctx.Value(middlewares.UserJwtKey).(repository.User)
+	val, ok := ctx.Value(middlewares.UserJwtKey).(int64)
 	if !ok {
 		return nil, huma.Error500InternalServerError("User not found in context")
 	}
@@ -40,7 +39,7 @@ func (h *youtubeHandler) search(ctx context.Context, input *struct {
 		return nil, huma.Error400BadRequest("query too short")
 	}
 
-	search, err := h.youtubeService.Search(ctx, query, val.ID)
+	search, err := h.youtubeService.Search(ctx, query, val)
 	if err != nil {
 		return nil, huma.Error500InternalServerError(err.Error(), err)
 	}
@@ -51,10 +50,6 @@ func (h *youtubeHandler) search(ctx context.Context, input *struct {
 func (h *youtubeHandler) download(ctx context.Context, input *struct {
 	Id string `path:"id" minLength:"11" maxLength:"11"`
 }) (*struct{}, error) {
-	_, ok := ctx.Value(middlewares.UserJwtKey).(repository.User)
-	if !ok {
-		return nil, huma.Error500InternalServerError("User not found in context")
-	}
 	id := input.Id
 
 	_, err := h.trackService.GetById(ctx, id)

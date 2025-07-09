@@ -3,7 +3,6 @@ package api
 import (
 	"backend/cmd/app"
 	"backend/internal/adapters/handlers/api/middlewares"
-	"backend/internal/adapters/repository"
 	"backend/internal/domain/service"
 	"context"
 	"github.com/danielgtaylor/huma/v2"
@@ -28,17 +27,17 @@ func (h *trackHandler) submit(ctx context.Context, input *struct {
 	PlaylistId string `path:"playlist_id" minLength:"26" maxLength:"26" example:"01JZ35PYGP6HJA08H0NHYPBHWD" doc:"playlist id"`
 	TrackId    string `path:"track_id" minLength:"11" maxLength:"11" example:"dQw4w9WgXcQ"`
 }) (*struct{}, error) {
-	val, ok := ctx.Value(middlewares.UserJwtKey).(repository.User)
+	val, ok := ctx.Value(middlewares.UserJwtKey).(int64)
 	if !ok {
 		return nil, huma.Error500InternalServerError("User not found in context")
 	}
 
-	err := h.trackService.Submit(ctx, input.PlaylistId, input.TrackId, val.ID)
+	err := h.trackService.Submit(ctx, input.PlaylistId, input.TrackId, val)
 	if err != nil {
 		return nil, huma.Error404NotFound("playlist not found", err)
 	}
 
-	err = h.youtubeService.Download(ctx, input.TrackId)
+	err = h.youtubeService.Download(context.Background(), input.TrackId)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Youtube download failed", err)
 	}
@@ -50,12 +49,12 @@ func (h *trackHandler) remove(ctx context.Context, input *struct {
 	PlaylistId string `path:"playlist_id" minLength:"26" maxLength:"26" example:"01JZ35PYGP6HJA08H0NHYPBHWD" doc:"playlist id"`
 	TrackId    string `path:"track_id" minLength:"11" maxLength:"11" example:"dQw4w9WgXcQ"`
 }) (*struct{}, error) {
-	val, ok := ctx.Value(middlewares.UserJwtKey).(repository.User)
+	val, ok := ctx.Value(middlewares.UserJwtKey).(int64)
 	if !ok {
 		return nil, huma.Error500InternalServerError("User not found in context")
 	}
 
-	playlist, err := h.playlistService.GetById(ctx, input.PlaylistId, val.ID)
+	playlist, err := h.playlistService.GetById(ctx, input.PlaylistId, val)
 	if err != nil {
 		return nil, huma.Error404NotFound("playlist not found", err)
 	}
@@ -64,12 +63,12 @@ func (h *trackHandler) remove(ctx context.Context, input *struct {
 		return nil, huma.Error403Forbidden("action not allowed")
 	}
 
-	err = h.trackService.RemoveApproved(ctx, input.PlaylistId, input.TrackId, val.ID)
+	err = h.trackService.RemoveApproved(ctx, input.PlaylistId, input.TrackId, val)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("failed to remove from allowed tracks", err)
 	}
 
-	err = h.trackService.Decline(ctx, input.PlaylistId, input.TrackId, val.ID)
+	err = h.trackService.Decline(ctx, input.PlaylistId, input.TrackId, val)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("failed to remove from tracks", err)
 	}
@@ -81,12 +80,12 @@ func (h *trackHandler) approve(ctx context.Context, input *struct {
 	PlaylistId string `path:"playlist_id" minLength:"26" maxLength:"26" example:"01JZ35PYGP6HJA08H0NHYPBHWD" doc:"playlist id"`
 	TrackId    string `path:"track_id" minLength:"11" maxLength:"11" example:"dQw4w9WgXcQ"`
 }) (*struct{}, error) {
-	val, ok := ctx.Value(middlewares.UserJwtKey).(repository.User)
+	val, ok := ctx.Value(middlewares.UserJwtKey).(int64)
 	if !ok {
 		return nil, huma.Error500InternalServerError("User not found in context")
 	}
 
-	playlist, err := h.playlistService.GetById(ctx, input.PlaylistId, val.ID)
+	playlist, err := h.playlistService.GetById(ctx, input.PlaylistId, val)
 	if err != nil {
 		return nil, huma.Error404NotFound("playlist not found", err)
 	}
@@ -95,7 +94,7 @@ func (h *trackHandler) approve(ctx context.Context, input *struct {
 		return nil, huma.Error403Forbidden("action not allowed")
 	}
 
-	err = h.trackService.Approve(ctx, input.PlaylistId, input.TrackId, val.ID)
+	err = h.trackService.Approve(ctx, input.PlaylistId, input.TrackId, val)
 	if err != nil {
 		return nil, huma.Error500InternalServerError(err.Error(), err)
 	}
@@ -107,12 +106,12 @@ func (h *trackHandler) decline(ctx context.Context, input *struct {
 	PlaylistId string `path:"playlist_id" minLength:"26" maxLength:"26" example:"01JZ35PYGP6HJA08H0NHYPBHWD" doc:"playlist id"`
 	TrackId    string `path:"track_id" minLength:"11" maxLength:"11" example:"dQw4w9WgXcQ"`
 }) (*struct{}, error) {
-	val, ok := ctx.Value(middlewares.UserJwtKey).(repository.User)
+	val, ok := ctx.Value(middlewares.UserJwtKey).(int64)
 	if !ok {
 		return nil, huma.Error500InternalServerError("User not found in context")
 	}
 
-	playlist, err := h.playlistService.GetById(ctx, input.PlaylistId, val.ID)
+	playlist, err := h.playlistService.GetById(ctx, input.PlaylistId, val)
 	if err != nil {
 		return nil, huma.Error404NotFound("playlist not found", err)
 	}
@@ -121,7 +120,7 @@ func (h *trackHandler) decline(ctx context.Context, input *struct {
 		return nil, huma.Error403Forbidden("action not allowed")
 	}
 
-	err = h.trackService.Decline(ctx, input.PlaylistId, input.TrackId, val.ID)
+	err = h.trackService.Decline(ctx, input.PlaylistId, input.TrackId, val)
 	if err != nil {
 		return nil, huma.Error500InternalServerError(err.Error(), err)
 	}
@@ -142,8 +141,8 @@ func (h *trackHandler) Setup(router huma.API, auth func(ctx huma.Context, next f
 		Tags: []string{
 			"tracks",
 		},
-		Summary:     "Add a trackService to playlist",
-		Description: "If your role is viewer, you are putting trackService for review. If you're owner/moderator you're automatically adding trackService to allowed",
+		Summary:     "Add a track to playlist",
+		Description: "If your role is viewer, you are putting track for review. If you're owner/moderator you're automatically adding track to allowed",
 		Middlewares: huma.Middlewares{auth},
 		Security: []map[string][]string{
 			{
@@ -164,7 +163,7 @@ func (h *trackHandler) Setup(router huma.API, auth func(ctx huma.Context, next f
 		Tags: []string{
 			"tracks",
 		},
-		Summary:     "Remove allowed trackService from playlist",
+		Summary:     "Remove allowed track from playlist",
 		Description: "If your role is viewer, you are not allowed. If you're owner/moderator you can invoke this",
 		Middlewares: huma.Middlewares{auth},
 		Security: []map[string][]string{
@@ -186,7 +185,7 @@ func (h *trackHandler) Setup(router huma.API, auth func(ctx huma.Context, next f
 		Tags: []string{
 			"tracks",
 		},
-		Summary:     "Approve trackService in playlist",
+		Summary:     "Approve track in playlist",
 		Description: "If your role is viewer, you are not allowed. If you're owner/moderator you can invoke this",
 		Middlewares: huma.Middlewares{auth},
 		Security: []map[string][]string{
@@ -208,7 +207,7 @@ func (h *trackHandler) Setup(router huma.API, auth func(ctx huma.Context, next f
 		Tags: []string{
 			"tracks",
 		},
-		Summary:     "Decline a trackService in submissions",
+		Summary:     "Decline a track in submissions",
 		Description: "If your role is viewer, you are not allowed. If you're owner/moderator you can invoke this",
 		Middlewares: huma.Middlewares{auth},
 		Security: []map[string][]string{

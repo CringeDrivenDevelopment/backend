@@ -17,16 +17,16 @@ func NewUserService(pool *pgxpool.Pool) *UserService {
 }
 
 func (s *UserService) Create(ctx context.Context, params repository.CreateUserParams) error {
+	readQueries := repository.New(s.pool)
+	if _, err := readQueries.GetUserById(ctx, params.ID); err == nil {
+		return errors.New("user already exists")
+	}
+
 	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return err
 	}
-
 	queries := repository.New(tx)
-
-	if _, err := queries.GetUserById(ctx, params.ID); err == nil {
-		return errors.New("user already exists")
-	}
 
 	if err := queries.CreateUser(ctx, params); err != nil {
 		txErr := tx.Rollback(ctx)

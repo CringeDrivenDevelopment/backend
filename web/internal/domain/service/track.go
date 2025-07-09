@@ -8,15 +8,18 @@ import (
 	"errors"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.uber.org/zap"
 	"slices"
 )
 
 type TrackService struct {
 	pool *pgxpool.Pool
+
+	logger *zap.Logger
 }
 
 func NewTrackService(app *app.App) *TrackService {
-	return &TrackService{pool: app.DB}
+	return &TrackService{pool: app.DB, logger: app.Logger}
 }
 
 func (s *TrackService) GetById(ctx context.Context, id string) (dto.Track, error) {
@@ -37,13 +40,8 @@ func (s *TrackService) GetById(ctx context.Context, id string) (dto.Track, error
 }
 
 func (s *TrackService) Approve(ctx context.Context, playlistId, trackId string, userId int64) error {
-	tx, txErr := s.pool.BeginTx(ctx, pgx.TxOptions{})
-	if txErr != nil {
-		return txErr
-	}
-
-	queries := repository.New(tx)
-	playlist, err := queries.GetPlaylistById(ctx, repository.GetPlaylistByIdParams{
+	readQueries := repository.New(s.pool)
+	playlist, err := readQueries.GetPlaylistById(ctx, repository.GetPlaylistByIdParams{
 		PlaylistID: playlistId,
 		UserID:     userId,
 	})
@@ -58,6 +56,12 @@ func (s *TrackService) Approve(ctx context.Context, playlistId, trackId string, 
 	if !slices.Contains(playlist.Tracks, trackId) {
 		return errors.New("track not found in playlist")
 	}
+
+	tx, txErr := s.pool.BeginTx(ctx, pgx.TxOptions{})
+	if txErr != nil {
+		return txErr
+	}
+	queries := repository.New(tx)
 
 	err = queries.EditPlaylist(ctx, repository.EditPlaylistParams{
 		ID:            playlistId,
@@ -86,13 +90,8 @@ func (s *TrackService) Approve(ctx context.Context, playlistId, trackId string, 
 }
 
 func (s *TrackService) Decline(ctx context.Context, playlistId, trackId string, userId int64) error {
-	tx, txErr := s.pool.BeginTx(ctx, pgx.TxOptions{})
-	if txErr != nil {
-		return txErr
-	}
-
-	queries := repository.New(tx)
-	playlist, err := queries.GetPlaylistById(ctx, repository.GetPlaylistByIdParams{
+	readQueries := repository.New(s.pool)
+	playlist, err := readQueries.GetPlaylistById(ctx, repository.GetPlaylistByIdParams{
 		PlaylistID: playlistId,
 		UserID:     userId,
 	})
@@ -114,6 +113,12 @@ func (s *TrackService) Decline(ctx context.Context, playlistId, trackId string, 
 			break
 		}
 	}
+
+	tx, txErr := s.pool.BeginTx(ctx, pgx.TxOptions{})
+	if txErr != nil {
+		return txErr
+	}
+	queries := repository.New(tx)
 
 	err = queries.EditPlaylist(ctx, repository.EditPlaylistParams{
 		ID:            playlistId,
@@ -142,13 +147,8 @@ func (s *TrackService) Decline(ctx context.Context, playlistId, trackId string, 
 }
 
 func (s *TrackService) Submit(ctx context.Context, playlistId, trackId string, userId int64) error {
-	tx, txErr := s.pool.BeginTx(ctx, pgx.TxOptions{})
-	if txErr != nil {
-		return txErr
-	}
-
-	queries := repository.New(tx)
-	playlist, err := queries.GetPlaylistById(ctx, repository.GetPlaylistByIdParams{
+	readQueries := repository.New(s.pool)
+	playlist, err := readQueries.GetPlaylistById(ctx, repository.GetPlaylistByIdParams{
 		PlaylistID: playlistId,
 		UserID:     userId,
 	})
@@ -156,10 +156,7 @@ func (s *TrackService) Submit(ctx context.Context, playlistId, trackId string, u
 		return err
 	}
 
-	if _, err := queries.GetTrackById(ctx, trackId); err != nil {
-		if txErr := tx.Rollback(ctx); txErr != nil {
-			return txErr
-		}
+	if _, err := readQueries.GetTrackById(ctx, trackId); err != nil {
 		return err
 	}
 
@@ -173,6 +170,12 @@ func (s *TrackService) Submit(ctx context.Context, playlistId, trackId string, u
 	} else {
 		return nil
 	}
+
+	tx, txErr := s.pool.BeginTx(ctx, pgx.TxOptions{})
+	if txErr != nil {
+		return txErr
+	}
+	queries := repository.New(tx)
 
 	err = queries.EditPlaylist(ctx, repository.EditPlaylistParams{
 		ID:            playlistId,
@@ -197,13 +200,8 @@ func (s *TrackService) Submit(ctx context.Context, playlistId, trackId string, u
 }
 
 func (s *TrackService) RemoveApproved(ctx context.Context, playlistId, trackId string, userId int64) error {
-	tx, txErr := s.pool.BeginTx(ctx, pgx.TxOptions{})
-	if txErr != nil {
-		return txErr
-	}
-
-	queries := repository.New(tx)
-	playlist, err := queries.GetPlaylistById(ctx, repository.GetPlaylistByIdParams{
+	readQueries := repository.New(s.pool)
+	playlist, err := readQueries.GetPlaylistById(ctx, repository.GetPlaylistByIdParams{
 		PlaylistID: playlistId,
 		UserID:     userId,
 	})
@@ -225,6 +223,12 @@ func (s *TrackService) RemoveApproved(ctx context.Context, playlistId, trackId s
 			break
 		}
 	}
+
+	tx, txErr := s.pool.BeginTx(ctx, pgx.TxOptions{})
+	if txErr != nil {
+		return txErr
+	}
+	queries := repository.New(tx)
 
 	err = queries.EditPlaylist(ctx, repository.EditPlaylistParams{
 		ID:            playlistId,

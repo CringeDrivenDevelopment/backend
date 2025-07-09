@@ -38,7 +38,8 @@ func NewMiddlewareHandler(app *app.App) *MiddlewareHandler {
 func (h *MiddlewareHandler) IsAuthenticated(ctx huma.Context, next func(ctx huma.Context)) {
 	authHeader := ctx.Header("Authorization")
 
-	user, err := h.tokenService.GetUserFromJWT(authHeader, ctx.Context(), h.userService.GetByID)
+	// user, err := h.tokenService.GetUserFromJWT(authHeader, ctx.Context(), h.userService.GetByID)
+	id, err := h.tokenService.VerifyToken(authHeader)
 	if err != nil {
 		err := huma.WriteErr(h.api, ctx, 401, "unauthorized")
 		if err != nil {
@@ -48,7 +49,7 @@ func (h *MiddlewareHandler) IsAuthenticated(ctx huma.Context, next func(ctx huma
 		return
 	}
 
-	ctx = huma.WithValue(ctx, UserJwtKey, user)
+	ctx = huma.WithValue(ctx, UserJwtKey, id)
 
 	// Otherwise, just continue as normal.
 	next(ctx)

@@ -3,7 +3,6 @@ package main
 import (
 	"backend/cmd/app"
 	"backend/internal/adapters/handlers/api"
-	"backend/internal/adapters/handlers/bot"
 	"go.uber.org/zap"
 	"os"
 	"os/signal"
@@ -27,25 +26,29 @@ func main() {
 		return
 	}
 
-	botApp, err := bot.New(mainApp)
-	if err != nil {
-		logger.Panic(err.Error())
-		return
-	}
+	/*
+		botApp, err := bot.New(mainApp)
+			if err != nil {
+				logger.Panic(err.Error())
+				return
+			}
+	*/
 
 	logger.Info("app initialized")
 
 	api.Setup(mainApp)
-	botApp.Setup()
+	// botApp.Setup()
 
 	logger.Info("endpoints mapped")
 
-	go func() {
-		err := botApp.Start()
-		if err != nil {
-			logger.Info(err.Error())
-		}
-	}()
+	/*
+		go func() {
+				err := botApp.Start()
+				if err != nil {
+					logger.Info(err.Error())
+				}
+			}()
+	*/
 
 	go func() {
 		err := mainApp.Start()
@@ -57,7 +60,7 @@ func main() {
 
 	<-sigChan
 
-	botApp.Stop()
+	// botApp.Stop()
 	err = mainApp.Stop()
 	if err != nil {
 		logger.Panic(err.Error())

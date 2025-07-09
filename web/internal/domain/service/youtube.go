@@ -90,14 +90,14 @@ func (s *YoutubeService) Search(ctx context.Context, query string, userId int64)
 	}
 
 	searchQueries := repository.New(s.pool)
+	trackTx, err := s.pool.BeginTx(ctx, pgx.TxOptions{})
+	trackQueries := repository.New(trackTx)
 
 	for i, track := range data {
 		if _, err := searchQueries.GetTrackById(ctx, track.Id); errors.Is(err, pgx.ErrNoRows) {
-			trackTx, err := s.pool.BeginTx(ctx, pgx.TxOptions{})
 			if err != nil {
 				return nil, err
 			}
-			trackQueries := repository.New(trackTx)
 			err = trackQueries.CreateTrack(ctx, repository.CreateTrackParams{
 				ID:        track.Id,
 				Title:     track.Title,
@@ -112,10 +112,6 @@ func (s *YoutubeService) Search(ctx context.Context, query string, userId int64)
 				}
 				return nil, err
 			}
-			err = trackTx.Commit(ctx)
-			if err != nil {
-				return nil, err
-			}
 		}
 
 		playlistIds, err := searchQueries.GetTrackPlaylists(ctx, repository.GetTrackPlaylistsParams{
@@ -127,6 +123,11 @@ func (s *YoutubeService) Search(ctx context.Context, query string, userId int64)
 		} else {
 			data[i].PlaylistIds = playlistIds
 		}
+	}
+
+	err = trackTx.Commit(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	return data, nil
