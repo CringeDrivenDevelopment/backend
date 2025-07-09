@@ -71,11 +71,6 @@ func (h *youtubeHandler) download(ctx context.Context, input *struct {
 }
 
 func (h *youtubeHandler) baseStream(ctx context.Context, id *string, file string) (*dto.FileBody, error) {
-	_, ok := ctx.Value(middlewares.UserJwtKey).(repository.User)
-	if !ok {
-		return nil, huma.Error500InternalServerError("User not found in context")
-	}
-
 	if id != nil {
 		_, err := h.trackService.GetById(ctx, *id)
 		if err != nil {
@@ -120,6 +115,10 @@ func (h *youtubeHandler) streamArchive(ctx context.Context, input *struct {
 }) (*dto.FileBody, error) {
 	if strings.Contains(input.File, "..") {
 		return nil, huma.Error400BadRequest("file must not contain '..'")
+	}
+
+	if !strings.HasSuffix(input.File, ".zip") {
+		return nil, huma.Error400BadRequest("file must contain '.zip'")
 	}
 
 	return h.baseStream(ctx, nil, input.File)
@@ -206,11 +205,5 @@ func (h *youtubeHandler) Setup(router huma.API, auth func(ctx huma.Context, next
 		},
 		Summary:     "Get songs archive",
 		Description: "Get file by filename",
-		Middlewares: huma.Middlewares{auth},
-		Security: []map[string][]string{
-			{
-				"jwt": []string{},
-			},
-		},
 	}, h.streamArchive)
 }
