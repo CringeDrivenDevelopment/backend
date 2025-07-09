@@ -46,12 +46,12 @@ export async function dl(cobaltUrl: string, id: string, metadata: Metadata): Pro
         'ffmpeg',
         '-y',
         '-i', data.url,
-        '-i', metadata.thumbnail, '-map', '0', '-map', '1', '-disposition:v:0', 'attached_pic', // set cover
+        '-i', metadata.thumbnail, '-map', '0:a', '-map', '1:v', '-disposition:v:0', 'attached_pic', // set cover
         '-c:a', 'aac',
-        '-vn',
+        '-c:v', 'copy',
         '-t', metadata.length.toString(),
-        '-metadata', `'title=${metadata.title}'`,
-        '-metadata', `'artist=${metadata.authors}'`,
+        '-metadata', `title=${metadata.title.replaceAll(' ', '\\ ')}`,
+        '-metadata', `artist=${metadata.authors.replaceAll(' ', '\\ ')}`,
         fixedFile,
     ];
 
