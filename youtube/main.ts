@@ -2,7 +2,7 @@ import {Hono} from "hono";
 import type {JwtVariables} from "hono/jwt";
 import {jwt} from "hono/jwt";
 import {getMetadata, search} from "./utils/api.ts";
-import {dl} from "./utils/dl.ts";
+import {archive, dl} from "./utils/dl.ts";
 
 const secret = Bun.env.JWT_SECRET;
 if (secret === undefined || secret === '') {
@@ -45,6 +45,30 @@ app.get('/api/search', async (c) => {
     }
 });
 
+// create archive
+app.post('/api/archive', async (c) => {
+    const body = await c.req.json<{
+        songs: string[];
+    }>();
+
+    if (!body.songs || !Array.isArray(body.songs) || body.songs.length === 0) {
+        return c.json({ error: 'Invalid request format' }, 400);
+    }
+
+    const hash = Bun.hash(body.songs.join(), Number.MAX_SAFE_INTEGER).toString();
+    const archiveName = `${hash}.zip`
+
+    if (!await Bun.file(`./dl/${archiveName}`).exists()) {
+        archive(body.songs, archiveName).catch(err => {
+            console.error(err);
+        });
+    }
+
+    return c.json({
+        filename: `./dl/${archiveName}`,
+    });
+});
+
 // request download
 app.post('/api/dl', async (c) => {
     const id = c.req.query('id');
@@ -75,24 +99,23 @@ app.post('/api/dl', async (c) => {
 });
 
 // handle files
-app.get('/api/dl/:id/:file', async (c) => {
-    const id = c.req.param('id');
-    if (id === '' || id === undefined) {
-        return c.json({});
-    }
+app.get('/api/dl/:id?/:file?', async (c) => {
+    let id = c.req.param('id') || '';
+    let file = c.req.param('file') || '';
 
-    const file = c.req.param('file');
-    if (file === '' || file === undefined) {
-        return c.json({});
+    if (!file && id) {
+        file = id;
+        id = '';
     }
 
     // path traversal block
-    file.replaceAll('..', '');
-
-    const blob = Bun.file(`./dl/${id}/${file}`);
+    file = file.replaceAll('..', '');
+    const path = id !== undefined ? `./dl/${id}/${file}` : `./dl/${file}`;
+    const blob = Bun.file(path);
+    console.log(`Received download request for path: ${path}`);
     // check if exists
     if (!await blob.exists()) {
-        if (file == 'hls.m3u8') {
+        if (file == 'hls.m3u8' && id !== undefined) {
             console.log(`Received dl request for id: ${id}`);
 
             const metadata = await getMetadata(id);

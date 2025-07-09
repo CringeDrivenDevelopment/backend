@@ -4,6 +4,7 @@ import (
 	"backend/cmd/app"
 	"backend/internal/adapters/repository"
 	"backend/internal/domain/dto"
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -39,8 +40,8 @@ func NewYoutubeService(app *app.App) *YoutubeService {
 	}
 }
 
-func (s *YoutubeService) makeRequest(ctx context.Context, method string, endpoint string) (*http.Response, error) {
-	req, err := http.NewRequestWithContext(ctx, method, s.baseUrl+endpoint, nil)
+func (s *YoutubeService) makeRequest(ctx context.Context, method, endpoint string, body io.Reader) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(ctx, method, s.baseUrl+endpoint, body)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +62,7 @@ func (s *YoutubeService) makeRequest(ctx context.Context, method string, endpoin
 }
 
 func (s *YoutubeService) Search(ctx context.Context, query string, userId int64) ([]dto.Track, error) {
-	resp, err := s.makeRequest(ctx, http.MethodGet, "/api/search?query="+url.QueryEscape(query))
+	resp, err := s.makeRequest(ctx, http.MethodGet, "/api/search?query="+url.QueryEscape(query), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +133,7 @@ func (s *YoutubeService) Search(ctx context.Context, query string, userId int64)
 }
 
 func (s *YoutubeService) Download(ctx context.Context, id string) error {
-	resp, err := s.makeRequest(ctx, http.MethodPost, "/api/dl?id="+id)
+	resp, err := s.makeRequest(ctx, http.MethodPost, "/api/dl?id="+id, nil)
 	if err != nil {
 		return err
 	}
@@ -143,8 +144,44 @@ func (s *YoutubeService) Download(ctx context.Context, id string) error {
 	return nil
 }
 
-func (s *YoutubeService) Stream(ctx context.Context, id, file string) (io.ReadCloser, error) {
-	resp, err := s.makeRequest(ctx, http.MethodGet, fmt.Sprintf("/api/dl/%s/%s", id, file))
+func (s *YoutubeService) Archive(ctx context.Context, songs []string) (dto.Archive, error) {
+	bodyStruct := struct {
+		Songs []string `json:"songs"`
+	}{
+		Songs: songs,
+	}
+	bodyBytes, err := sonic.Marshal(bodyStruct)
+	if err != nil {
+		return dto.Archive{}, err
+	}
+	resp, err := s.makeRequest(ctx, http.MethodPost, "/api/archive", bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		return dto.Archive{}, err
+	}
+
+	respStruct := dto.Archive{}
+	respBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return dto.Archive{}, err
+	}
+	err = sonic.Unmarshal(respBytes, &respStruct)
+	if err != nil {
+		return dto.Archive{}, err
+	}
+	if err := resp.Body.Close(); err != nil {
+		return dto.Archive{}, err
+	}
+
+	return respStruct, nil
+}
+
+func (s *YoutubeService) Stream(ctx context.Context, id *string, file string) (io.ReadCloser, error) {
+	fileUrl := fmt.Sprintf("/api/dl/%s", file)
+	if id != nil {
+		fileUrl = fmt.Sprintf("/api/dl/%s/%s", *id, file)
+	}
+
+	resp, err := s.makeRequest(ctx, http.MethodGet, fileUrl, nil)
 	if err != nil {
 		return nil, err
 	}

@@ -10,6 +10,7 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"io"
 	"net/http"
+	"strings"
 )
 
 type youtubeHandler struct {
@@ -69,24 +70,20 @@ func (h *youtubeHandler) download(ctx context.Context, input *struct {
 	return &struct{}{}, nil
 }
 
-func (h *youtubeHandler) stream(ctx context.Context, input *struct {
-	Id   string `path:"id" minLength:"11" maxLength:"11"`
-	File string `path:"file"`
-}) (*struct {
-	Body []byte
-}, error) {
+func (h *youtubeHandler) baseStream(ctx context.Context, id *string, file string) (*dto.FileBody, error) {
 	_, ok := ctx.Value(middlewares.UserJwtKey).(repository.User)
 	if !ok {
 		return nil, huma.Error500InternalServerError("User not found in context")
 	}
 
-	id := input.Id
-	_, err := h.trackService.GetById(ctx, id)
-	if err != nil {
-		return nil, huma.Error404NotFound(err.Error(), err)
+	if id != nil {
+		_, err := h.trackService.GetById(ctx, *id)
+		if err != nil {
+			return nil, huma.Error404NotFound(err.Error(), err)
+		}
 	}
 
-	stream, err := h.youtubeService.Stream(ctx, id, input.File)
+	stream, err := h.youtubeService.Stream(ctx, id, file)
 	if err != nil {
 		return nil, huma.Error500InternalServerError(err.Error())
 	}
@@ -100,7 +97,32 @@ func (h *youtubeHandler) stream(ctx context.Context, input *struct {
 		return nil, huma.Error500InternalServerError(err.Error())
 	}
 
-	return &struct{ Body []byte }{Body: bytes}, nil
+	return &dto.FileBody{Body: bytes}, nil
+}
+
+func (h *youtubeHandler) streamMusic(ctx context.Context, input *struct {
+	Id   string `path:"id" minLength:"11" maxLength:"11"`
+	File string `path:"file"`
+}) (*dto.FileBody, error) {
+	if strings.Contains(input.File, "..") {
+		return nil, huma.Error400BadRequest("file must not contain '..'")
+	}
+
+	if strings.Contains(input.Id, "..") {
+		return nil, huma.Error400BadRequest("id must not contain '..'")
+	}
+
+	return h.baseStream(ctx, &input.Id, input.File)
+}
+
+func (h *youtubeHandler) streamArchive(ctx context.Context, input *struct {
+	File string `path:"file"`
+}) (*dto.FileBody, error) {
+	if strings.Contains(input.File, "..") {
+		return nil, huma.Error400BadRequest("file must not contain '..'")
+	}
+
+	return h.baseStream(ctx, nil, input.File)
 }
 
 func (h *youtubeHandler) Setup(router huma.API, auth func(ctx huma.Context, next func(ctx huma.Context))) {
@@ -149,7 +171,7 @@ func (h *youtubeHandler) Setup(router huma.API, auth func(ctx huma.Context, next
 	}, h.download)
 
 	huma.Register(router, huma.Operation{
-		OperationID: "youtube-stream",
+		OperationID: "youtube-stream-music",
 		Path:        "/api/youtube/{id}/{file}",
 		Method:      http.MethodGet,
 		Errors: []int{
@@ -160,13 +182,35 @@ func (h *youtubeHandler) Setup(router huma.API, auth func(ctx huma.Context, next
 		Tags: []string{
 			"youtube",
 		},
-		Summary:     "Get file",
-		Description: "Get track file",
+		Summary:     "Get music file",
+		Description: "Get file by filename",
 		Middlewares: huma.Middlewares{auth},
 		Security: []map[string][]string{
 			{
 				"jwt": []string{},
 			},
 		},
-	}, h.stream)
+	}, h.streamMusic)
+
+	huma.Register(router, huma.Operation{
+		OperationID: "youtube-stream-archive",
+		Path:        "/api/youtube/{file}",
+		Method:      http.MethodGet,
+		Errors: []int{
+			400,
+			401,
+			500,
+		},
+		Tags: []string{
+			"youtube",
+		},
+		Summary:     "Get songs archive",
+		Description: "Get file by filename",
+		Middlewares: huma.Middlewares{auth},
+		Security: []map[string][]string{
+			{
+				"jwt": []string{},
+			},
+		},
+	}, h.streamArchive)
 }

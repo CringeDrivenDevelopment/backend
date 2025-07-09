@@ -16,12 +16,14 @@ import (
 type playlistHandler struct {
 	playlistService   *service.PlaylistService
 	permissionService *service.PermissionService
+	youtubeService    *service.YoutubeService
 }
 
 func newPlaylistsHandler(app *app.App) *playlistHandler {
 	return &playlistHandler{
 		playlistService:   service.NewPlaylistService(app),
 		permissionService: service.NewPermissionService(app),
+		youtubeService:    service.NewYoutubeService(app),
 	}
 }
 
@@ -64,6 +66,29 @@ func (h *playlistHandler) getById(ctx context.Context, input *struct {
 		return nil, huma.Error404NotFound("playlist not found", err)
 	}
 	return &struct{ Body dto.Playlist }{Body: resp}, nil
+}
+
+func (h *playlistHandler) download(ctx context.Context, input *struct {
+	Id string `path:"id" minLength:"26" maxLength:"26" example:"01JZ35PYGP6HJA08H0NHYPBHWD" doc:"playlist id"`
+}) (*struct {
+	Body dto.Archive
+}, error) {
+	val, ok := ctx.Value(middlewares.UserJwtKey).(repository.User)
+	if !ok {
+		return nil, huma.Error500InternalServerError("User not found in context")
+	}
+
+	resp, err := h.playlistService.GetById(ctx, input.Id, val.ID)
+	if err != nil {
+		return nil, huma.Error404NotFound("playlist not found", err)
+	}
+
+	archive, err := h.youtubeService.Archive(ctx, resp.AllowedIds)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("failed to download playlist", err)
+	}
+
+	return &struct{ Body dto.Archive }{Body: archive}, nil
 }
 
 func (h *playlistHandler) delete(ctx context.Context, input *struct {
@@ -151,6 +176,28 @@ func (h *playlistHandler) Setup(router huma.API, auth func(ctx huma.Context, nex
 			},
 		},
 	}, h.getById)
+
+	huma.Register(router, huma.Operation{
+		OperationID: "playlist-download",
+		Path:        "/api/playlists/{id}/download",
+		Method:      http.MethodPost,
+		Errors: []int{
+			401,
+			404,
+			500,
+		},
+		Tags: []string{
+			"playlist",
+		},
+		Summary:     "Download",
+		Description: "Get playlist archive.zip url",
+		Middlewares: huma.Middlewares{auth},
+		Security: []map[string][]string{
+			{
+				"jwt": []string{},
+			},
+		},
+	}, h.download)
 
 	huma.Register(router, huma.Operation{
 		OperationID: "playlist-delete",

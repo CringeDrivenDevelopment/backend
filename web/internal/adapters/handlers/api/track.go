@@ -10,15 +10,18 @@ import (
 	"net/http"
 )
 
-// TODO: removeSubmit
-
 type trackHandler struct {
 	playlistService *service.PlaylistService
 	trackService    *service.TrackService
+	youtubeService  *service.YoutubeService
 }
 
 func newTrackHandler(app *app.App) *trackHandler {
-	return &trackHandler{playlistService: service.NewPlaylistService(app), trackService: service.NewTrackService(app)}
+	return &trackHandler{
+		playlistService: service.NewPlaylistService(app),
+		trackService:    service.NewTrackService(app),
+		youtubeService:  service.NewYoutubeService(app),
+	}
 }
 
 func (h *trackHandler) submit(ctx context.Context, input *struct {
@@ -34,6 +37,12 @@ func (h *trackHandler) submit(ctx context.Context, input *struct {
 	if err != nil {
 		return nil, huma.Error404NotFound("playlist not found", err)
 	}
+
+	err = h.youtubeService.Download(ctx, input.TrackId)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Youtube download failed", err)
+	}
+
 	return nil, nil
 }
 

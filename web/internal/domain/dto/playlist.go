@@ -13,3 +13,7 @@ type Playlist struct {
 	Role          string   `json:"role"`
 	Type          string   `json:"type"`
 }
+
+type Archive struct {
+	Filename string `json:"filename"`
+}

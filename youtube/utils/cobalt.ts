@@ -22,9 +22,5 @@ export async function getCobalt(cobaltUrl: string, id: string): Promise<CobaltDa
         })
     });
 
-    return await resp.json() as {
-        status: string,
-        url: string,
-        filename: string,
-    };
+    return await resp.json() as CobaltData;
 }
