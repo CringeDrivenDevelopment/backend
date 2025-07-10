@@ -14,7 +14,7 @@ type Settings struct {
 	VerifiedTokens []string `env:"VERIFIED_BOT_TOKENS"`
 	YoutubeUrl     string   `env:"YOUTUBE_URL" env-default:"https://yt.lxft.tech"`
 	YoutubeToken   string   `env:"YOUTUBE_TOKEN"`
-	MinioBucket    string   `env:"MINIO_BUCKET" env-default:"music"`
+	MinioBucket    string   `env:"MINIO_BUCKET" env-default:"images"`
 	MinioHost      string   `env:"MINIO_HOST" env-default:"localhost:9000"`
 	MinioSecretKey string   `env:"MINIO_SECRET_KEY" env-default:"minioadmin"`
 	MinioAccessKey string   `env:"MINIO_ACCESS_KEY" env-default:"minioadmin"`

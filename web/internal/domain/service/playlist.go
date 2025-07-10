@@ -147,7 +147,7 @@ func (s *PlaylistService) GetAll(ctx context.Context, userId int64) ([]dto.Playl
 	return result, nil
 }
 
-func (s *PlaylistService) Rename(ctx context.Context, playlistId string, userId int64, title string) error {
+func (s *PlaylistService) Rename(ctx context.Context, playlistId, title string, userId int64) error {
 	tx, txErr := s.pool.BeginTx(ctx, pgx.TxOptions{})
 	if txErr != nil {
 		return txErr
@@ -163,6 +163,49 @@ func (s *PlaylistService) Rename(ctx context.Context, playlistId string, userId 
 	}
 
 	playlist.Title = title
+
+	err = queries.EditPlaylist(ctx, repository.EditPlaylistParams{
+		ID:            playlist.ID,
+		Title:         playlist.Title,
+		Thumbnail:     playlist.Thumbnail,
+		Tracks:        playlist.Tracks,
+		AllowedTracks: playlist.AllowedTracks,
+		Type:          playlist.Type,
+	})
+	if err != nil {
+		if txErr := tx.Rollback(ctx); txErr != nil {
+			return txErr
+		}
+		return err
+	}
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		if txErr := tx.Rollback(ctx); txErr != nil {
+			return txErr
+		}
+		return err
+	}
+
+	return nil
+}
+
+func (s *PlaylistService) UpdatePhoto(ctx context.Context, playlistId, thumbnail string, userId int64) error {
+	tx, txErr := s.pool.BeginTx(ctx, pgx.TxOptions{})
+	if txErr != nil {
+		return txErr
+	}
+
+	queries := repository.New(tx)
+	playlist, err := queries.GetPlaylistById(ctx, repository.GetPlaylistByIdParams{
+		PlaylistID: playlistId,
+		UserID:     userId,
+	})
+	if err != nil {
+		return err
+	}
+
+	playlist.Thumbnail = thumbnail
 
 	err = queries.EditPlaylist(ctx, repository.EditPlaylistParams{
 		ID:            playlist.ID,
