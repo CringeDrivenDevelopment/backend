@@ -6,23 +6,30 @@ import (
 	"backend/internal/domain/dto"
 	"backend/internal/domain/service"
 	"context"
+	"fmt"
 	"github.com/danielgtaylor/huma/v2"
+	"go.uber.org/zap"
 	"net/http"
 )
 
 // TODO: edit playlist title, check for changes if playlist is not custom
 
 type playlistHandler struct {
-	playlistService   *service.PlaylistService
-	permissionService *service.PermissionService
-	youtubeService    *service.YoutubeService
+	playlistService     *service.PlaylistService
+	permissionService   *service.PermissionService
+	youtubeService      *service.YoutubeService
+	notificationService *service.TelegramNotificationService
+
+	logger *zap.Logger
 }
 
 func newPlaylistsHandler(app *app.App) *playlistHandler {
 	return &playlistHandler{
-		playlistService:   service.NewPlaylistService(app),
-		permissionService: service.NewPermissionService(app),
-		youtubeService:    service.NewYoutubeService(app),
+		playlistService:     service.NewPlaylistService(app),
+		permissionService:   service.NewPermissionService(app),
+		youtubeService:      service.NewYoutubeService(app),
+		notificationService: service.NewTelegramNotificationService(app),
+		logger:              app.Logger,
 	}
 }
 
@@ -85,6 +92,12 @@ func (h *playlistHandler) download(ctx context.Context, input *struct {
 	archive, err := h.youtubeService.Archive(ctx, resp.AllowedIds)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("failed to download playlist", err)
+	}
+
+	// TODO: FIX THIS HARDCODED HELL
+	err = h.notificationService.Send(val, "Привет! Вот ссылка на твой архив с песнями, если через миниапп не работает. Удачно потусить)"+"\n\n"+fmt.Sprintf("https://cloud.lxft.tech/api/youtube/%s", archive.Filename))
+	if err != nil {
+		h.logger.Warn(err.Error())
 	}
 
 	return &struct{ Body dto.Archive }{Body: archive}, nil

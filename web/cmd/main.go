@@ -27,18 +27,19 @@ func main() {
 		return
 	}
 
+	api.Setup(mainApp)
+
+	logger.Info("endpoints mapped")
+
 	botApp, err := bot.New(mainApp)
 	if err != nil {
 		logger.Panic(err.Error())
 		return
 	}
 
-	logger.Info("app initialized")
-
-	api.Setup(mainApp)
 	botApp.Setup()
 
-	logger.Info("endpoints mapped")
+	logger.Info("app initialized")
 
 	go func() {
 		err := botApp.Start()
