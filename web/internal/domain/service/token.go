@@ -1,6 +1,7 @@
 package service
 
 import (
+	"backend/cmd/app"
 	"backend/internal/adapters/repository"
 	"context"
 	"errors"
@@ -16,8 +17,8 @@ type TokenService struct {
 	expires time.Duration
 }
 
-func NewTokenService(secret string, expires time.Duration) *TokenService {
-	return &TokenService{secret: secret, expires: expires}
+func NewTokenService(app *app.App, expires time.Duration) *TokenService {
+	return &TokenService{secret: app.Settings.JwtSecret, expires: expires}
 }
 
 func (s *TokenService) VerifyToken(authHeader string) (int64, error) {

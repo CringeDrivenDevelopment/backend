@@ -159,10 +159,10 @@ func (s *TrackService) Submit(ctx context.Context, playlistId, trackId string, u
 
 	tracks := playlist.Tracks
 	allowedTracks := playlist.AllowedTracks
-	if (playlist.Role == OwnerRole || playlist.Role == ModeratorRole) && !slices.Contains(allowedTracks, trackId) {
+	if (playlist.Role == dto.OwnerRole || playlist.Role == dto.ModeratorRole) && !slices.Contains(allowedTracks, trackId) {
 		tracks = append(tracks, trackId)
 		allowedTracks = append(allowedTracks, trackId)
-	} else if !slices.Contains(tracks, trackId) && playlist.Role == ViewerRole {
+	} else if !slices.Contains(tracks, trackId) && playlist.Role == dto.ViewerRole {
 		tracks = append(tracks, trackId)
 	} else {
 		return nil

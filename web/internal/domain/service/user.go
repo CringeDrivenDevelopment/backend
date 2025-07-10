@@ -1,6 +1,7 @@
 package service
 
 import (
+	"backend/cmd/app"
 	"backend/internal/adapters/repository"
 	"context"
 	"errors"
@@ -12,8 +13,8 @@ type UserService struct {
 	pool *pgxpool.Pool
 }
 
-func NewUserService(pool *pgxpool.Pool) *UserService {
-	return &UserService{pool: pool}
+func NewUserService(app *app.App) *UserService {
+	return &UserService{pool: app.DB}
 }
 
 func (s *UserService) Create(ctx context.Context, params repository.CreateUserParams) error {

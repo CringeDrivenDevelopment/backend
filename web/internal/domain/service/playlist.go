@@ -59,7 +59,7 @@ func (s *PlaylistService) Create(ctx context.Context, title string, source strin
 		Length:        0,
 		AllowedIds:    nil,
 		AllowedLength: 0,
-		Role:          OwnerRole,
+		Role:          dto.OwnerRole,
 		Type:          source,
 	}, nil
 }
@@ -74,7 +74,7 @@ func (s *PlaylistService) GetById(ctx context.Context, playlistId string, userId
 		return dto.Playlist{}, err
 	}
 
-	if !slices.Contains(roles, playlist.Role) {
+	if !slices.Contains(dto.UserRoles, playlist.Role) {
 		return dto.Playlist{}, errors.New("playlist not found")
 	}
 

@@ -1,4 +1,4 @@
-package service
+package dto
 
 /*
 CREATE TYPE playlist_role AS ENUM ('viewer', 'moderator', 'owner');
@@ -13,4 +13,4 @@ const (
 	TgSource     = "tg"
 )
 
-var roles = []string{ViewerRole, ModeratorRole, OwnerRole}
+var UserRoles = []string{ViewerRole, ModeratorRole, OwnerRole}

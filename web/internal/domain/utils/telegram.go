@@ -2,29 +2,116 @@ package utils
 
 import (
 	"backend/internal/domain/dto"
-	"encoding/json"
 	"errors"
-	"net/url"
+	"github.com/celestix/gotgproto/ext"
+	"github.com/gotd/td/tg"
 )
 
-func ParseInitData(initDataRaw string) (*dto.UserReturn, error) {
-	initDataValues, err := url.ParseQuery(initDataRaw)
+type ParticipantData struct {
+	PrevRole string
+	NewRole  string
+	UserID   int64
+	ChatID   int64
+	ActorID  int64
+}
 
-	if err != nil {
-		return nil, err
+type Chat struct {
+	Title string
+	Photo tg.ChatPhotoClass
+	Users *[]ParticipantData
+}
+
+func HandleParticipant(update *ext.Update) (ParticipantData, error) {
+	var data ParticipantData
+	switch u := update.UpdateClass.(type) {
+	case *tg.UpdateChannelParticipant:
+		data = extractChannelData(u)
+	case *tg.UpdateChatParticipant:
+		data = extractChatData(u)
+	default:
+		return data, errors.New("invalid update type " + u.TypeName())
 	}
 
-	initDataUser := initDataValues.Get("user")
+	return data, nil
+}
 
-	if initDataUser == "" {
-		return nil, errors.New("telegram user empty")
+func extractChannelData(update *tg.UpdateChannelParticipant) ParticipantData {
+	newRole := ""
+	prevRole := ""
+
+	if update.PrevParticipant != nil {
+		switch update.PrevParticipant.(type) {
+		case *tg.ChannelParticipant:
+			prevRole = dto.ViewerRole
+		case *tg.ChannelParticipantAdmin:
+			prevRole = dto.ModeratorRole
+		case *tg.ChannelParticipantCreator:
+			prevRole = dto.OwnerRole
+		case *tg.ChannelParticipantSelf:
+			prevRole = dto.ViewerRole
+		default:
+			prevRole = ""
+		}
 	}
 
-	user := dto.UserReturn{}
-	err = json.Unmarshal([]byte(initDataUser), &user)
-	if err != nil {
-		return nil, err
+	if update.NewParticipant != nil {
+		switch update.NewParticipant.(type) {
+		case *tg.ChannelParticipant:
+			newRole = dto.ViewerRole
+		case *tg.ChannelParticipantAdmin:
+			newRole = dto.ModeratorRole
+		case *tg.ChannelParticipantCreator:
+			newRole = dto.OwnerRole
+		case *tg.ChannelParticipantSelf:
+			newRole = dto.ViewerRole
+		default:
+			newRole = ""
+		}
 	}
 
-	return &user, nil
+	return ParticipantData{
+		PrevRole: prevRole,
+		NewRole:  newRole,
+		UserID:   update.UserID,
+		ChatID:   update.ChannelID,
+		ActorID:  update.ActorID,
+	}
+}
+
+func extractChatData(update *tg.UpdateChatParticipant) ParticipantData {
+	prevRole := ""
+	newRole := ""
+
+	if update.PrevParticipant != nil {
+		switch update.PrevParticipant.(type) {
+		case *tg.ChatParticipant:
+			prevRole = dto.ViewerRole
+		case *tg.ChatParticipantAdmin:
+			prevRole = dto.ModeratorRole
+		case *tg.ChatParticipantCreator:
+			prevRole = dto.OwnerRole
+		default:
+			prevRole = ""
+		}
+	}
+
+	if update.NewParticipant != nil {
+		switch update.NewParticipant.(type) {
+		case *tg.ChatParticipant:
+			newRole = dto.ViewerRole
+		case *tg.ChatParticipantAdmin:
+			newRole = dto.ModeratorRole
+		case *tg.ChatParticipantCreator:
+			newRole = dto.OwnerRole
+		default:
+			newRole = ""
+		}
+	}
+
+	return ParticipantData{
+		PrevRole: prevRole,
+		NewRole:  newRole,
+		UserID:   update.UserID,
+		ChatID:   update.ChatID,
+	}
 }

@@ -60,6 +60,8 @@ func (b *Bot) Setup() {
 	disp.AddHandler(handlers.NewChatMemberUpdated(nil, b.handleGroup))
 
 	disp.AddHandler(handlers.NewCommand("start", b.handleStart))
+
+	// handle group title and photo update
 }
 
 func (b *Bot) Start() error {

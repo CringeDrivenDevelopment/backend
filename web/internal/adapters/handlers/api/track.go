@@ -3,6 +3,7 @@ package api
 import (
 	"backend/cmd/app"
 	"backend/internal/adapters/handlers/api/middlewares"
+	"backend/internal/domain/dto"
 	"backend/internal/domain/service"
 	"context"
 	"github.com/danielgtaylor/huma/v2"
@@ -59,7 +60,7 @@ func (h *trackHandler) remove(ctx context.Context, input *struct {
 		return nil, huma.Error404NotFound("playlist not found", err)
 	}
 
-	if playlist.Role != service.ModeratorRole && playlist.Role != service.OwnerRole {
+	if playlist.Role != dto.ModeratorRole && playlist.Role != dto.OwnerRole {
 		return nil, huma.Error403Forbidden("action not allowed")
 	}
 
@@ -90,7 +91,7 @@ func (h *trackHandler) approve(ctx context.Context, input *struct {
 		return nil, huma.Error404NotFound("playlist not found", err)
 	}
 
-	if playlist.Role != service.ModeratorRole && playlist.Role != service.OwnerRole {
+	if playlist.Role != dto.ModeratorRole && playlist.Role != dto.OwnerRole {
 		return nil, huma.Error403Forbidden("action not allowed")
 	}
 
@@ -116,7 +117,7 @@ func (h *trackHandler) decline(ctx context.Context, input *struct {
 		return nil, huma.Error404NotFound("playlist not found", err)
 	}
 
-	if playlist.Role != service.ModeratorRole && playlist.Role != service.OwnerRole {
+	if playlist.Role != dto.ModeratorRole && playlist.Role != dto.OwnerRole {
 		return nil, huma.Error403Forbidden("action not allowed")
 	}
 

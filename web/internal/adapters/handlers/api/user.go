@@ -21,8 +21,8 @@ type userHandler struct {
 }
 
 func newUserHandler(app *app.App) *userHandler {
-	userService := service.NewUserService(app.DB)
-	tokenService := service.NewTokenService(app.Settings.JwtSecret, time.Hour)
+	userService := service.NewUserService(app)
+	tokenService := service.NewTokenService(app, time.Hour)
 
 	return &userHandler{
 		userService:  userService,

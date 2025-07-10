@@ -38,11 +38,11 @@ func (h *playlistHandler) create(ctx context.Context, input *struct {
 		return nil, huma.Error500InternalServerError("User not found in context")
 	}
 
-	resp, err := h.playlistService.Create(ctx, input.Body.Title, service.CustomSource)
+	resp, err := h.playlistService.Create(ctx, input.Body.Title, dto.CustomSource)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("failed to create playlist", err)
 	}
-	err = h.permissionService.Add(ctx, service.OwnerRole, resp.Id, val)
+	err = h.permissionService.Add(ctx, dto.OwnerRole, resp.Id, val)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("failed to add playlist to user", err)
 	}
@@ -103,7 +103,7 @@ func (h *playlistHandler) delete(ctx context.Context, input *struct {
 		return nil, huma.Error404NotFound("playlist not found", err)
 	}
 
-	if playlist.Role != service.OwnerRole || playlist.Type != service.CustomSource {
+	if playlist.Role != dto.OwnerRole || playlist.Type != dto.CustomSource {
 		return nil, huma.Error403Forbidden("you're not allowed to do this", err)
 	}
 

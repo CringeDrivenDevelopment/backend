@@ -19,8 +19,8 @@ const UserJwtKey = "user"
 
 // NewMiddlewareHandler is a function that returns a new instance of MiddlewareHandler.
 func NewMiddlewareHandler(app *app.App) *MiddlewareHandler {
-	userService := service.NewUserService(app.DB)
-	tokenService := service.NewTokenService(app.Settings.JwtSecret, time.Hour)
+	userService := service.NewUserService(app)
+	tokenService := service.NewTokenService(app, time.Hour)
 
 	return &MiddlewareHandler{
 		userService:  userService,

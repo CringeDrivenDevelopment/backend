@@ -1,60 +1,35 @@
 package bot
 
 import (
-	"backend/internal/domain/service"
+	"backend/internal/domain/dto"
+	"backend/internal/domain/utils"
 	"context"
 	"errors"
 	"github.com/celestix/gotgproto/functions"
 	"github.com/gotd/td/tg"
+	"slices"
 )
 
-type chat struct {
-	title string
-	photo tg.ChatPhotoClass
-}
-
-func (b *Bot) getInputChannel(chatId int64) (*tg.InputChannel, error) {
-	peer, err := functions.GetInputPeerClassFromId(b.client.PeerStorage, chatId), error(nil)
-	if peer == nil {
-		return nil, errors.New("peer is nil")
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	var inputChannel *tg.InputChannel
-	switch p := peer.(type) {
-	case *tg.InputPeerChannel:
-		inputChannel = &tg.InputChannel{
-			ChannelID:  p.ChannelID,
-			AccessHash: p.AccessHash,
-		}
-	default:
-		return nil, errors.New("invalid peer")
-	}
-
-	return inputChannel, nil
-}
-
-func (b *Bot) iterateParticipants(ctx context.Context, chanel *tg.InputChannel, playlistId string) error {
+func (b *Bot) iterateParticipants(ctx context.Context, channel *tg.InputChannel) (*[]utils.ParticipantData, error) {
 	const limit = 100
 	offset := 0
+	var data []utils.ParticipantData
 
-	for {
+	for offset%100 == 0 {
 		resp, err := b.client.API().ChannelsGetParticipants(ctx, &tg.ChannelsGetParticipantsRequest{
-			Channel: chanel,
+			Channel: channel,
 			Filter:  &tg.ChannelParticipantsRecent{},
 			Offset:  offset,
 			Limit:   limit,
 			Hash:    0,
 		})
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		val, ok := resp.(*tg.ChannelsChannelParticipants)
 		if !ok {
-			return nil
+			return nil, errors.New("invalid response " + resp.TypeName())
 		}
 
 		for _, participant := range val.Participants {
@@ -64,54 +39,189 @@ func (b *Bot) iterateParticipants(ctx context.Context, chanel *tg.InputChannel, 
 			switch p := participant.(type) {
 			case *tg.ChannelParticipant:
 				userId = p.UserID
-				role = service.ViewerRole
+				role = dto.ViewerRole
 			case *tg.ChannelParticipantCreator:
 				userId = p.UserID
-				role = service.OwnerRole
+				role = dto.OwnerRole
 			case *tg.ChannelParticipantAdmin:
 				userId = p.UserID
-				role = service.ModeratorRole
+				role = dto.ModeratorRole
 			default:
 				continue
 			}
 
-			err := b.permissionService.Add(ctx, role, playlistId, userId)
-			if err != nil {
-				return err
+			if userId == b.client.Self.ID {
+				continue
 			}
+
+			data = append(data, utils.ParticipantData{
+				UserID:  userId,
+				NewRole: role,
+				ChatID:  channel.ChannelID,
+			})
 		}
 
-		offset += limit
+		offset += len(val.Participants)
 	}
+
+	offset = 0
+	for offset%100 == 0 {
+		resp, err := b.client.API().ChannelsGetParticipants(ctx, &tg.ChannelsGetParticipantsRequest{
+			Channel: channel,
+			Filter:  &tg.ChannelParticipantsAdmins{},
+			Offset:  offset,
+			Limit:   limit,
+			Hash:    0,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		val, ok := resp.(*tg.ChannelsChannelParticipants)
+		if !ok {
+			return nil, errors.New("invalid response " + resp.TypeName())
+		}
+
+		for _, participant := range val.Participants {
+			var userId int64
+			var role string
+
+			switch p := participant.(type) {
+			case *tg.ChannelParticipant:
+				userId = p.UserID
+				role = dto.ViewerRole
+			case *tg.ChannelParticipantCreator:
+				userId = p.UserID
+				role = dto.OwnerRole
+			case *tg.ChannelParticipantAdmin:
+				userId = p.UserID
+				role = dto.ModeratorRole
+			default:
+				continue
+			}
+
+			if userId == b.client.Self.ID {
+				continue
+			}
+
+			if slices.Contains(data, utils.ParticipantData{
+				UserID:  userId,
+				NewRole: role,
+				ChatID:  channel.ChannelID,
+			}) {
+				continue
+			}
+
+			data = append(data, utils.ParticipantData{
+				UserID:  userId,
+				NewRole: role,
+				ChatID:  channel.ChannelID,
+			})
+		}
+
+		offset += len(val.Participants)
+	}
+
+	return &data, nil
 }
 
-func (b *Bot) getChatInfo(ctx context.Context, inputChannel *tg.InputChannel) (*chat, error) {
-	full, err := b.client.API().ChannelsGetFullChannel(ctx, inputChannel)
+func (b *Bot) getChatInfo(ctx context.Context, chatID, actorID int64) (*utils.Chat, error) {
+	peer, err := functions.GetInputPeerClassFromId(b.client.PeerStorage, chatID), error(nil)
+	if peer == nil {
+		return nil, errors.New("peer is nil")
+	}
 	if err != nil {
 		return nil, err
 	}
 
-	if len(full.Chats) == 0 {
+	var chat tg.ChatClass
+	var info *utils.Chat
+	var users *[]utils.ParticipantData
+
+	switch peerResult := peer.(type) {
+	case *tg.InputPeerChat:
+		chatFull, err := b.client.API().MessagesGetFullChat(ctx, chatID)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(chatFull.Chats) != 1 {
+			return nil, errors.New("no chat found")
+		}
+
+		chat = chatFull.Chats[0]
+		usersTemp := make([]utils.ParticipantData, len(chatFull.Users))
+		for i, user := range chatFull.Users {
+			if val, ok := user.(*tg.User); ok {
+				if val.Bot {
+					continue
+				}
+
+				if val.ID != actorID {
+					usersTemp[i] = utils.ParticipantData{
+						NewRole: dto.ViewerRole,
+						ChatID:  chatID,
+						UserID:  val.ID,
+					}
+				} else {
+					usersTemp[i] = utils.ParticipantData{
+						NewRole: dto.OwnerRole,
+						ChatID:  chatID,
+						UserID:  val.ID,
+					}
+				}
+			}
+		}
+	case *tg.InputPeerChannel:
+		channelFull, err := b.client.API().ChannelsGetFullChannel(ctx, &tg.InputChannel{
+			ChannelID:  peerResult.ChannelID,
+			AccessHash: peerResult.AccessHash,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		if len(channelFull.Chats) != 1 {
+			return nil, errors.New("no chat found")
+		}
+
+		chat = channelFull.Chats[0]
+	default:
+		return nil, errors.New("unknown peer type " + peerResult.TypeName())
+	}
+
+	if chat == nil {
 		return nil, errors.New("no chat found")
 	}
 
-	if len(full.Chats) > 1 {
-		return nil, errors.New("multiple chat found")
+	switch c := chat.(type) {
+	case *tg.Chat:
+		info = &utils.Chat{
+			Title: c.Title,
+			Photo: c.Photo,
+		}
+		if users == nil || len(*users) > 0 {
+			return info, errors.New("no chat users found")
+		}
+	case *tg.Channel:
+		info = &utils.Chat{
+			Title: c.Title,
+			Photo: c.Photo,
+		}
+
+		users, err = b.iterateParticipants(ctx, &tg.InputChannel{
+			AccessHash: c.AccessHash,
+			ChannelID:  c.ID,
+		})
+
+		if err != nil {
+			return nil, err
+		}
+	default:
+		return nil, errors.New("unknown channel type " + c.TypeName())
 	}
 
-	chatResult := full.Chats[0]
-	switch result := chatResult.(type) {
-	case *tg.Channel:
-		return &chat{
-			title: result.Title,
-			photo: result.Photo,
-		}, nil
-	case *tg.Chat:
-		return &chat{
-			title: result.Title,
-			photo: result.Photo,
-		}, nil
-	default:
-		return nil, errors.New("invalid chat type " + chatResult.TypeName())
-	}
+	info.Users = users
+
+	return info, nil
 }

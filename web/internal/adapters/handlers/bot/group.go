@@ -1,109 +1,119 @@
 package bot
 
 import (
-	"backend/internal/domain/service"
+	"backend/internal/domain/dto"
+	"backend/internal/domain/utils"
+	"errors"
 	"github.com/celestix/gotgproto/ext"
 	"github.com/gotd/td/tg"
+	"github.com/jackc/pgx/v5"
+	"strconv"
 )
 
 func (b *Bot) handleGroup(ctx *ext.Context, update *ext.Update) error {
-	val, ok := update.UpdateClass.(*tg.UpdateChannelParticipant)
-	if !ok {
-		return nil
-	}
-
-	prev := ""
-	var id int64
-	switch p := val.PrevParticipant.(type) {
-	case *tg.ChannelParticipant:
-		prev = "member"
-		id = p.UserID
-	case *tg.ChannelParticipantSelf:
-		prev = "self"
-		id = p.UserID
-	case *tg.ChannelParticipantCreator:
-		prev = "creator"
-		id = p.UserID
-	case *tg.ChannelParticipantAdmin:
-		prev = "admin"
-		id = p.UserID
-	default:
-		prev = "left"
-	}
-
-	curr := ""
-	switch val.NewParticipant.(type) {
-	case *tg.ChannelParticipant:
-		curr = "member"
-	case *tg.ChannelParticipantSelf:
-		curr = "self"
-	case *tg.ChannelParticipantCreator:
-		curr = "creator"
-	case *tg.ChannelParticipantAdmin:
-		curr = "admin"
-	default:
-		curr = "left"
-	}
-
-	if prev == "left" && curr == "self" {
-		_, err := ctx.SendMessage(val.ChannelID, &tg.MessagesSendMessageRequest{Message: "Привет, я Лотти - бот для управления плейлистами! \n" +
-			"Можешь дать мне права администратора (чтобы я мог видеть лог AKA recent actions/недавние действия, а также всех участников и администраторов)"})
+	data, err := utils.HandleParticipant(update)
+	if err != nil {
+		b.logger.Error(err.Error())
 		return err
 	}
 
-	if prev == "self" && curr == "admin" {
-		_, err := ctx.SendMessage(val.ChannelID, &tg.MessagesSendMessageRequest{Message: "Респект тебе за админку, сейчас создам плейлист!"})
+	b.logger.Info("Handling group update. ChatID: " + strconv.FormatInt(data.ChatID, 10) + ", UserID: " + strconv.FormatInt(data.UserID, 10) + ", PrevRole: " + data.PrevRole + ", NewRole: " + data.NewRole)
+
+	if data.UserID == b.client.Self.ID {
+		if data.PrevRole == "" {
+			_, err := ctx.SendMessage(data.ChatID, &tg.MessagesSendMessageRequest{Message: "Привет, я Лотти - бот для управления плейлистами!" + "\n\n" +
+				"Можешь дать мне права администратора (чтобы я мог видеть лог AKA recent actions/недавние действия, а также всех участников и администраторов)"})
+			if err != nil {
+				b.logger.Error(err.Error())
+			}
+			return nil
+		}
+
+		if data.PrevRole == dto.ViewerRole && data.NewRole == dto.ModeratorRole {
+			_, err := ctx.SendMessage(data.ChatID, &tg.MessagesSendMessageRequest{Message: "Респект тебе за админку, сейчас создам плейлист!"})
+			if err != nil {
+				b.logger.Error(err.Error())
+				return err
+			}
+
+			// get basic chat info
+			chat, err := b.getChatInfo(ctx.Context, data.ChatID, data.ActorID)
+			if err != nil {
+				b.logger.Error(err.Error())
+				return err
+			}
+
+			// TODO: handle group avatar
+
+			// create playlist
+			create, err := b.playlistService.Create(ctx.Context, chat.Title, dto.TgSource)
+			if err != nil {
+				b.logger.Error(err.Error())
+				return err
+			}
+
+			// add group to indexing
+			err = b.permissionService.Add(ctx.Context, dto.GroupRole, create.Id, data.ChatID)
+			if err != nil {
+				b.logger.Error(err.Error())
+				return err
+			}
+
+			err = b.permissionService.AddGroup(ctx.Context, create.Id, *chat.Users)
+			if err != nil {
+				b.logger.Error(err.Error())
+				return err
+			}
+
+			return nil
+		}
+
+		if data.NewRole == "" || data.NewRole == dto.ViewerRole {
+			id, err := b.permissionService.Get(ctx, data.ChatID, dto.GroupRole)
+			if err != nil {
+				b.logger.Error(err.Error())
+				return err
+			}
+
+			err = b.playlistService.Delete(ctx.Context, id)
+			if err != nil {
+				b.logger.Error(err.Error())
+				return err
+			}
+
+			return nil
+		}
+	} else {
+		playlistID, err := b.permissionService.Get(ctx, data.ChatID, dto.GroupRole)
 		if err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return nil
+			}
+			b.logger.Error(err.Error())
 			return err
 		}
 
-		// get input channel
-		inputChat, err := b.getInputChannel(val.ChannelID)
-		if err != nil {
-			return err
+		if data.NewRole == "" {
+			err = b.permissionService.Remove(ctx, playlistID, data.UserID)
+			if err != nil {
+				b.logger.Error(err.Error())
+				return err
+			}
+		} else {
+			if data.PrevRole == "" {
+				err = b.permissionService.Add(ctx, data.NewRole, playlistID, data.UserID)
+				if err != nil {
+					b.logger.Error(err.Error())
+					return err
+				}
+			} else {
+				err = b.permissionService.Edit(ctx, data.NewRole, playlistID, data.UserID)
+				if err != nil {
+					b.logger.Error(err.Error())
+					return err
+				}
+			}
 		}
-
-		// get basic chat info
-		chat, err := b.getChatInfo(ctx.Context, inputChat)
-		if err != nil {
-			return err
-		}
-
-		// TODO: handle group avatar
-
-		// create playlist
-		create, err := b.playlistService.Create(ctx.Context, chat.title, service.TgSource)
-		if err != nil {
-			return err
-		}
-
-		// add roles to users, sorry(((((
-		err = b.iterateParticipants(ctx.Context, inputChat, create.Id)
-		if err != nil {
-			return err
-		}
-
-		// add group to indexing
-		err = b.permissionService.Add(ctx.Context, service.GroupRole, create.Id, val.ChannelID)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	}
-
-	if curr == "left" && id == b.client.Self.ID {
-		id, err := b.permissionService.Get(ctx, val.ChannelID, service.GroupRole)
-		if err != nil {
-			return err
-		}
-
-		err = b.playlistService.Delete(ctx.Context, id)
-		if err != nil {
-			return err
-		}
-
-		return nil
 	}
 
 	return nil
