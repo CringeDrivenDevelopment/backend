@@ -1,5 +1,8 @@
 # Muse Backend
 
+## ВАЖНО
+Репозиторий генератора находится здесь - https://github.com/CringeDrivenDevelopment/yt-session-generator
+
 ## API TODO:
 - logger (никогда)
 - normal errors (никогда)
