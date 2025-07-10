@@ -8,7 +8,6 @@ import (
 	"github.com/celestix/gotgproto/sessionMaker"
 	"github.com/celestix/gotgproto/types"
 	"github.com/gotd/td/telegram/dcs"
-	"github.com/gotd/td/telegram/downloader"
 	"github.com/gotd/td/tg"
 	"go.uber.org/zap"
 )
@@ -17,8 +16,8 @@ type Bot struct {
 	playlistService   *service.PlaylistService
 	permissionService *service.PermissionService
 	logger            *zap.Logger
-	dl                *downloader.Downloader
-	s3                *service.S3Service
+	// dl                *downloader.Downloader
+	// s3                *service.S3Service
 
 	client *gotgproto.Client
 }
@@ -51,18 +50,20 @@ func New(app *app.App) (*Bot, error) {
 	self := client.Self
 	app.Logger.Info("bot logged in as https://t.me/" + self.Username)
 
-	s3Service, err := service.NewS3Service(app)
-	if err != nil {
-		return nil, err
-	}
+	/*
+		s3Service, err := service.NewS3Service(app)
+		if err != nil {
+			return nil, err
+		}
+	*/
 
 	return &Bot{
 		playlistService:   service.NewPlaylistService(app),
 		permissionService: service.NewPermissionService(app),
-		dl:                downloader.NewDownloader(),
-		s3:                s3Service,
-		client:            client,
-		logger:            app.Logger,
+		// 	dl:                downloader.NewDownloader(),
+		//	s3:                s3Service,
+		client: client,
+		logger: app.Logger,
 	}, nil
 }
 
@@ -75,8 +76,8 @@ func (b *Bot) Setup() {
 
 	disp.AddHandler(handlers.NewMessage(func(msg *types.Message) bool {
 		_, okTitle := msg.Action.(*tg.MessageActionChatEditTitle)
-		_, okPhoto := msg.Action.(*tg.MessageActionChatEditPhoto)
-		return okPhoto || okTitle
+		// _, okPhoto := msg.Action.(*tg.MessageActionChatEditPhoto)
+		return okTitle // || okPhoto
 	}, b.handleChatAction))
 }
 

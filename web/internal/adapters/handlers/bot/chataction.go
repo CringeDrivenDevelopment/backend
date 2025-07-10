@@ -7,7 +7,6 @@ import (
 	"github.com/celestix/gotgproto/ext"
 	"github.com/gotd/td/tg"
 	"github.com/jackc/pgx/v5"
-	"io"
 	"strconv"
 )
 
@@ -45,16 +44,19 @@ func (b *Bot) handleChatAction(ctx *ext.Context, update *ext.Update) error {
 		if err != nil {
 			b.logger.Error(err.Error())
 		}
-	case *tg.MessageActionChatEditPhoto:
-		err := b.handlePhotoUpdate(ctx, smResult.Photo, id)
-		if err != nil {
-			b.logger.Error(err.Error())
-		}
+		/*
+			case *tg.MessageActionChatEditPhoto:
+					err := b.handlePhotoUpdate(ctx, smResult.Photo, id)
+					if err != nil {
+						b.logger.Error(err.Error())
+					}
+		*/
 	}
 
 	return nil
 }
 
+/*
 func (b *Bot) handlePhotoUpdate(ctx context.Context, photo tg.PhotoClass, chatID int64) error {
 	playlistID, err := b.permissionService.Get(ctx, chatID, dto.GroupRole)
 	if err != nil {
@@ -118,6 +120,7 @@ func (b *Bot) handlePhotoUpdate(ctx context.Context, photo tg.PhotoClass, chatID
 
 	return nil
 }
+*/
 
 func (b *Bot) handleTitleUpdate(ctx context.Context, title string, chatID int64) error {
 	playlistID, err := b.permissionService.Get(ctx, chatID, dto.GroupRole)
