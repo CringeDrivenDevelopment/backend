@@ -172,6 +172,7 @@ func (b *Bot) getChatInfo(ctx context.Context, chatID, actorID int64) (*utils.Ch
 				}
 			}
 		}
+		users = &usersTemp
 	case *tg.InputPeerChannel:
 		channelFull, err := b.client.API().ChannelsGetFullChannel(ctx, &tg.InputChannel{
 			ChannelID:  peerResult.ChannelID,

@@ -9,17 +9,17 @@ services:
       - "127.0.0.1:9000:9000"
     environment:
       API_URL: "http://localhost:9000/"
-      YOUTUBE_SESSION_SERVER: "http://yt-session-generator:8080"
+      YOUTUBE_SESSION_SERVER: "http://yt-session-generator:5050"
     depends_on:
       yt-session-generator:
         condition: service_healthy
 
   yt-session-generator:
-    image: ghcr.io/chaotic-spire/yt-session-generator:main
+    image: ghcr.io/cringedrivendevelopment/yt-session-generator:main
     restart: always
     ports:
-      - "5910:5910"
-      - "8080:8080"
+      - "127.0.0.1:5050:5050"
+      - "127.0.0.1:5910:5910"
     volumes:
       - swayvnc-wayvnc-certs:/certs
     environment:
@@ -36,10 +36,10 @@ services:
     security_opt:
       - seccomp:unconfined
     healthcheck:
-      test: [ "CMD", "curl", "--fail", "http://localhost:8080/token" ]
-      interval: 2s
+      test: [ "CMD", "curl", "--fail", "http://localhost:5050/token" ]
+      interval: 300s
       timeout: 3s
-      retries: 15
+      retries: 3
       start_period: 10s
 
 volumes:
