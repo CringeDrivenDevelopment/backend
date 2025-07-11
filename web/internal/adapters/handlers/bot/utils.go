@@ -150,25 +150,25 @@ func (b *Bot) getChatInfo(ctx context.Context, chatID, actorID int64) (*utils.Ch
 		}
 
 		chat = chatFull.Chats[0]
-		usersTemp := make([]utils.ParticipantData, len(chatFull.Users))
-		for i, user := range chatFull.Users {
+		var usersTemp []utils.ParticipantData
+		for _, user := range chatFull.Users {
 			if val, ok := user.(*tg.User); ok {
 				if val.Bot {
 					continue
 				}
 
 				if val.ID != actorID {
-					usersTemp[i] = utils.ParticipantData{
+					usersTemp = append(usersTemp, utils.ParticipantData{
 						NewRole: dto.ViewerRole,
 						ChatID:  chatID,
 						UserID:  val.ID,
-					}
+					})
 				} else {
-					usersTemp[i] = utils.ParticipantData{
+					usersTemp = append(usersTemp, utils.ParticipantData{
 						NewRole: dto.OwnerRole,
 						ChatID:  chatID,
 						UserID:  val.ID,
-					}
+					})
 				}
 			}
 		}
@@ -201,7 +201,7 @@ func (b *Bot) getChatInfo(ctx context.Context, chatID, actorID int64) (*utils.Ch
 			Title: c.Title,
 			Photo: c.Photo,
 		}
-		if users == nil || len(*users) > 0 {
+		if users == nil || len(*users) == 0 {
 			return info, errors.New("no chat users found")
 		}
 	case *tg.Channel:

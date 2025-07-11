@@ -113,5 +113,6 @@ func extractChatData(update *tg.UpdateChatParticipant) ParticipantData {
 		NewRole:  newRole,
 		UserID:   update.UserID,
 		ChatID:   update.ChatID,
+		ActorID:  update.ActorID,
 	}
 }
