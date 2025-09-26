@@ -1,6 +1,6 @@
 services:
   database:
-    container_name: database
+    container_name: muse_db
     ports:
       - "127.0.0.1:5432:5432"
     env_file:
@@ -17,13 +17,14 @@ services:
     labels:
       - "com.centurylinklabs.watchtower.enable=false"
     restart: always
+
   api:
-    container_name: api
+    container_name: muse_api
     ports:
       - "127.0.0.1:8080:8080"
     env_file:
       - .env
-    image: ghcr.io/cringedrivendevelopment/backend-web:main
+    image: ghcr.io/cringedrivendevelopment/backend:main
     healthcheck:
       test: [ "CMD", "curl", "--fail", "http://localhost:8080/api/ping" ]
       interval: 30s

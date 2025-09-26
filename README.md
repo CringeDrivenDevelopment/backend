@@ -24,73 +24,60 @@ go run cmd/main.go
 
 ├── README.md
 ├── compose.yml
-├── web # бэкэнд мини приложения
-│ ├── Dockerfile
-│ ├── cmd
-│ │ ├── app
-│ │ │ └── app.go
-│ │ └── main.go # точка входа
-│ ├── dev-compose.yml
-│ ├── go.mod
-│ ├── go.sum
-│ ├── internal
-│ │ ├── adapters
-│ │ │ ├── config # конфигурация
-│ │ │ │ └── config.go
-│ │ │ ├── handlers
-│ │ │ │ ├── api # функции APi
-│ │ │ │ │ ├── middlewares
-│ │ │ │ │ │ └── jwt.go
-│ │ │ │ │ ├── playlist.go
-│ │ │ │ │ ├── setup.go
-│ │ │ │ │ ├── track.go
-│ │ │ │ │ ├── user.go
-│ │ │ │ │ ├── validator
-│ │ │ │ │ │ └── validator.go
-│ │ │ │ │ └── youtube.go
-│ │ │ │ └── bot # функции бота
-│ │ │ │     ├── group.go
-│ │ │ │     ├── setup.go
-│ │ │ │     ├── start.go
-│ │ │ │     └── utils.go
-│ │ │ └── repository # sql обёртка
-│ │ │     ├── db.go
-│ │ │     ├── models.go
-│ │ │     └── schema.sql.go
-│ │ └── domain
-│ │     ├── dto # модельки запросов на отдачу фронтэнду
-│ │     │ ├── file.go
-│ │     │ ├── ping.go
-│ │     │ ├── playlist.go
-│ │     │ ├── token.go
-│ │     │ ├── track.go
-│ │     │ └── user.go
-│ │     ├── service # логика частей приложения
-│ │     │ ├── const.go
-│ │     │ ├── permissions.go
-│ │     │ ├── playlist.go
-│ │     │ ├── token.go
-│ │     │ ├── track.go
-│ │     │ ├── user.go
-│ │     │ └── youtube.go
-│ │     └── utils # хелперы
-│ │         ├── connection.go
-│ │         └── telegram.go
-│ ├── sql
-│ │ └── schema.sql # сырые SQL команды
-│ └── sqlc.yml # конфиг для генерации обёртки над SQL кодом
-└── youtube # бэкэнд для скачивания музыки
-    ├── Dockerfile
-    ├── README.md
-    ├── bun.lock
-    ├── dev-compose.yml
-    ├── main.ts
-    ├── package.json
-    ├── tsconfig.json
-    └── utils
-        ├── api.ts
-        ├── cobalt.ts
-        └── dl.ts
+├── Dockerfile
+├── cmd
+│ ├── app
+│ │ └── app.go
+│ └── main.go # точка входа
+├── dev-compose.yml
+├── go.mod
+├── go.sum
+├── internal
+│ ├── adapters
+│ │ ├── config # конфигурация
+│ │ │ └── config.go
+│ │ ├── handlers
+│ │ │ ├── api # функции APi
+│ │ │ │ ├── middlewares
+│ │ │ │ │ └── jwt.go
+│ │ │ │ ├── playlist.go
+│ │ │ │ ├── setup.go
+│ │ │ │ ├── track.go
+│ │ │ │ ├── user.go
+│ │ │ │ ├── validator
+│ │ │ │ │ └── validator.go
+│ │ │ │ └── youtube.go
+│ │ │ └── bot # функции бота
+│ │ │     ├── group.go
+│ │ │     ├── setup.go
+│ │ │     ├── start.go
+│ │ │     └── utils.go
+│ │ └── repository # sql обёртка
+│ │     ├── db.go
+│ │     ├── models.go
+│ │     └── schema.sql.go
+│ └── domain
+│     ├── dto # модельки запросов на отдачу фронтэнду
+│     │ ├── file.go
+│     │ ├── ping.go
+│     │ ├── playlist.go
+│     │ ├── token.go
+│     │ ├── track.go
+│     │ └── user.go
+│     ├── service # логика частей приложения
+│     │ ├── const.go
+│     │ ├── permissions.go
+│     │ ├── playlist.go
+│     │ ├── token.go
+│     │ ├── track.go
+│     │ ├── user.go
+│     │ └── youtube.go
+│     └── utils # хелперы
+│         ├── connection.go
+│         └── telegram.go
+├── sql
+│ └── schema.sql # сырые SQL команды
+└── sqlc.yml # конфиг для генерации обёртки над SQL кодом
 ```
 
 # Roles
