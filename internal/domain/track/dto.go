@@ -1,6 +1,6 @@
-package dto
+package track
 
-type Track struct {
+type DtoTrack struct {
 	Id          string   `json:"id"`
 	Title       string   `json:"title"`
 	Authors     string   `json:"authors"`

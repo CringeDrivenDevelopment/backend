@@ -1,8 +1,7 @@
 package bot
 
 import (
-	"backend/internal/domain/dto"
-	"backend/internal/domain/utils"
+	"backend/internal/infra/database/queries"
 	"errors"
 	"strconv"
 
@@ -12,13 +11,13 @@ import (
 )
 
 func (b *Bot) handleGroup(ctx *ext.Context, update *ext.Update) error {
-	data, err := utils.HandleParticipant(update)
+	data, err := HandleParticipant(update)
 	if err != nil {
 		b.logger.Error(err.Error())
 		return err
 	}
 
-	b.logger.Info("Handling group update. ChatID: " + strconv.FormatInt(data.ChatID, 10) + ", UserID: " + strconv.FormatInt(data.UserID, 10) + ", PrevRole: " + data.PrevRole + ", NewRole: " + data.NewRole)
+	b.logger.Info("Handling group update. ChatID: " + strconv.FormatInt(data.ChatID, 10) + ", UserID: " + strconv.FormatInt(data.UserID, 10) + ", PrevRole: " + string(data.PrevRole) + ", NewRole: " + string(data.NewRole))
 
 	if data.UserID == b.client.Self.ID {
 		if data.PrevRole == "" {
@@ -30,7 +29,7 @@ func (b *Bot) handleGroup(ctx *ext.Context, update *ext.Update) error {
 			return nil
 		}
 
-		if data.PrevRole == dto.ViewerRole && data.NewRole == dto.ModeratorRole {
+		if data.PrevRole == queries.PlaylistRoleViewer && data.NewRole == queries.PlaylistRoleModerator {
 			_, err := ctx.SendMessage(data.ChatID, &tg.MessagesSendMessageRequest{Message: "Респект тебе за админку, сейчас создам плейлист!"})
 			if err != nil {
 				b.logger.Error(err.Error())
@@ -47,14 +46,14 @@ func (b *Bot) handleGroup(ctx *ext.Context, update *ext.Update) error {
 			// TODO: handle group avatar
 
 			// create playlist
-			create, err := b.playlistService.Create(ctx.Context, chat.Title, dto.TgSource)
+			create, err := b.playlistService.Create(ctx.Context, chat.Title, queries.PlaylistTypeUnknown)
 			if err != nil {
 				b.logger.Error(err.Error())
 				return err
 			}
 
 			// add group to indexing
-			err = b.permissionService.Add(ctx.Context, dto.GroupRole, create.Id, data.ChatID)
+			err = b.permissionService.Add(ctx.Context, queries.PlaylistRoleGroup, create.Id, data.ChatID)
 			if err != nil {
 				b.logger.Error(err.Error())
 				return err
@@ -69,8 +68,8 @@ func (b *Bot) handleGroup(ctx *ext.Context, update *ext.Update) error {
 			return nil
 		}
 
-		if data.NewRole == "" || data.NewRole == dto.ViewerRole {
-			id, err := b.permissionService.Get(ctx, data.ChatID, dto.GroupRole)
+		if data.NewRole == "" || data.NewRole == queries.PlaylistRoleViewer {
+			id, err := b.permissionService.Get(ctx, data.ChatID, queries.PlaylistRoleGroup)
 			if err != nil {
 				b.logger.Error(err.Error())
 				return err
@@ -85,7 +84,7 @@ func (b *Bot) handleGroup(ctx *ext.Context, update *ext.Update) error {
 			return nil
 		}
 	} else {
-		playlistID, err := b.permissionService.Get(ctx, data.ChatID, dto.GroupRole)
+		playlistID, err := b.permissionService.Get(ctx, data.ChatID, queries.PlaylistRoleGroup)
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				return nil

@@ -1,7 +1,7 @@
 package bot
 
 import (
-	"backend/internal/domain/dto"
+	"backend/internal/infra/database/queries"
 	"context"
 	"errors"
 	"strconv"
@@ -124,7 +124,7 @@ func (b *Bot) handlePhotoUpdate(ctx context.Context, photo tg.PhotoClass, chatID
 */
 
 func (b *Bot) handleTitleUpdate(ctx context.Context, title string, chatID int64) error {
-	playlistID, err := b.permissionService.Get(ctx, chatID, dto.GroupRole)
+	playlistID, err := b.permissionService.Get(ctx, chatID, queries.PlaylistRoleGroup)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil

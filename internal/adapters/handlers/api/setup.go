@@ -3,7 +3,6 @@ package api
 import (
 	"backend/cmd/app"
 	"backend/internal/adapters/handlers/api/middlewares"
-	"backend/internal/domain/dto"
 	"context"
 	"net/http"
 
@@ -38,18 +37,24 @@ func Setup(app *app.App) {
 		Summary:     "Pong!",
 		Description: "Check if server has started and running",
 		Tags:        []string{"ping"},
-	}, func(ctx context.Context, input *struct{}) (*dto.PingOutput, error) {
-		resp := &dto.PingOutput{}
+	}, func(ctx context.Context, input *struct{}) (*struct {
+		Body struct {
+			Status string `json:"status" example:"Pong!"`
+		}
+	}, error) {
+		resp := &struct{ Body struct{ Status string } }{}
 		resp.Body.Status = "Pong!"
-		return resp, nil
+		return (*struct {
+			Body struct {
+				Status string `json:"status" example:"Pong!"`
+			}
+		})(resp), nil
 	})
 
 	middlewareHandler := middlewares.NewMiddlewareHandler(app)
 	//
 	// Setup user routes
 	newUserHandler(app).Setup(app.Router)
-
-	newYoutubeHandler(app).Setup(app.Router, middlewareHandler.IsAuthenticated)
 
 	newPlaylistsHandler(app).Setup(app.Router, middlewareHandler.IsAuthenticated)
 

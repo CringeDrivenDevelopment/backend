@@ -1,20 +1,117 @@
 package bot
 
 import (
-	"backend/internal/domain/dto"
-	"backend/internal/domain/utils"
+	"backend/internal/domain/permission"
+	"backend/internal/infra/database/queries"
 	"context"
 	"errors"
 	"slices"
 
+	"github.com/celestix/gotgproto/ext"
 	"github.com/celestix/gotgproto/functions"
 	"github.com/gotd/td/tg"
 )
 
-func (b *Bot) iterateParticipants(ctx context.Context, channel *tg.InputChannel) (*[]utils.ParticipantData, error) {
+func HandleParticipant(update *ext.Update) (permission.ParticipantData, error) {
+	var data permission.ParticipantData
+	switch u := update.UpdateClass.(type) {
+	case *tg.UpdateChannelParticipant:
+		data = extractChannelData(u)
+	case *tg.UpdateChatParticipant:
+		data = extractChatData(u)
+	default:
+		return data, errors.New("invalid update type " + u.TypeName())
+	}
+
+	return data, nil
+}
+
+func extractChannelData(update *tg.UpdateChannelParticipant) permission.ParticipantData {
+	var newRole queries.PlaylistRole
+	var prevRole queries.PlaylistRole
+
+	if update.PrevParticipant != nil {
+		switch update.PrevParticipant.(type) {
+		case *tg.ChannelParticipant:
+			prevRole = queries.PlaylistRoleViewer
+		case *tg.ChannelParticipantAdmin:
+			prevRole = queries.PlaylistRoleModerator
+		case *tg.ChannelParticipantCreator:
+			prevRole = queries.PlaylistRoleOwner
+		case *tg.ChannelParticipantSelf:
+			prevRole = queries.PlaylistRoleViewer
+		default:
+			prevRole = ""
+		}
+	}
+
+	if update.NewParticipant != nil {
+		switch update.NewParticipant.(type) {
+		case *tg.ChannelParticipant:
+			newRole = queries.PlaylistRoleViewer
+		case *tg.ChannelParticipantAdmin:
+			newRole = queries.PlaylistRoleModerator
+		case *tg.ChannelParticipantCreator:
+			newRole = queries.PlaylistRoleOwner
+		case *tg.ChannelParticipantSelf:
+			newRole = queries.PlaylistRoleViewer
+		default:
+			newRole = ""
+		}
+	}
+
+	return permission.ParticipantData{
+		PrevRole: prevRole,
+		NewRole:  newRole,
+		UserID:   update.UserID,
+		ChatID:   update.ChannelID,
+		ActorID:  update.ActorID,
+	}
+}
+
+func extractChatData(update *tg.UpdateChatParticipant) permission.ParticipantData {
+	var newRole queries.PlaylistRole
+	var prevRole queries.PlaylistRole
+
+	if update.PrevParticipant != nil {
+		switch update.PrevParticipant.(type) {
+		case *tg.ChatParticipant:
+			prevRole = queries.PlaylistRoleViewer
+		case *tg.ChatParticipantAdmin:
+			prevRole = queries.PlaylistRoleModerator
+		case *tg.ChatParticipantCreator:
+			prevRole = queries.PlaylistRoleOwner
+		default:
+			prevRole = ""
+		}
+	}
+
+	if update.NewParticipant != nil {
+		switch update.NewParticipant.(type) {
+		case *tg.ChatParticipant:
+			newRole = queries.PlaylistRoleViewer
+		case *tg.ChatParticipantAdmin:
+			newRole = queries.PlaylistRoleModerator
+		case *tg.ChatParticipantCreator:
+			newRole = queries.PlaylistRoleOwner
+		default:
+			newRole = ""
+		}
+	}
+
+	return permission.ParticipantData{
+		PrevRole: prevRole,
+		NewRole:  newRole,
+		UserID:   update.UserID,
+		ChatID:   update.ChatID,
+		ActorID:  update.ActorID,
+	}
+}
+
+func (b *Bot) iterateParticipants(ctx context.Context, channel *tg.InputChannel) (*[]permission.ParticipantData, error) {
 	const limit = 100
 	offset := 0
-	var data []utils.ParticipantData
+	var data []permission.ParticipantData
 
 	for offset%100 == 0 {
 		resp, err := b.client.API().ChannelsGetParticipants(ctx, &tg.ChannelsGetParticipantsRequest{
@@ -35,18 +132,18 @@ func (b *Bot) iterateParticipants(ctx context.Context, channel *tg.InputChannel)
 
 		for _, participant := range val.Participants {
 			var userId int64
-			var role string
+			var role queries.PlaylistRole
 
 			switch p := participant.(type) {
 			case *tg.ChannelParticipant:
 				userId = p.UserID
-				role = dto.ViewerRole
+				role = queries.PlaylistRoleViewer
 			case *tg.ChannelParticipantCreator:
 				userId = p.UserID
-				role = dto.OwnerRole
+				role = queries.PlaylistRoleOwner
 			case *tg.ChannelParticipantAdmin:
 				userId = p.UserID
-				role = dto.ModeratorRole
+				role = queries.PlaylistRoleModerator
 			default:
 				continue
 			}
@@ -55,7 +152,7 @@ func (b *Bot) iterateParticipants(ctx context.Context, channel *tg.InputChannel)
 				continue
 			}
 
-			data = append(data, utils.ParticipantData{
+			data = append(data, permission.ParticipantData{
 				UserID:  userId,
 				NewRole: role,
 				ChatID:  channel.ChannelID,
@@ -85,18 +182,18 @@ func (b *Bot) iterateParticipants(ctx context.Context, channel *tg.InputChannel)
 
 		for _, participant := range val.Participants {
 			var userId int64
-			var role string
+			var role queries.PlaylistRole
 
 			switch p := participant.(type) {
 			case *tg.ChannelParticipant:
 				userId = p.UserID
-				role = dto.ViewerRole
+				role = queries.PlaylistRoleViewer
 			case *tg.ChannelParticipantCreator:
 				userId = p.UserID
-				role = dto.OwnerRole
+				role = queries.PlaylistRoleOwner
 			case *tg.ChannelParticipantAdmin:
 				userId = p.UserID
-				role = dto.ModeratorRole
+				role = queries.PlaylistRoleModerator
 			default:
 				continue
 			}
@@ -105,7 +202,7 @@ func (b *Bot) iterateParticipants(ctx context.Context, channel *tg.InputChannel)
 				continue
 			}
 
-			if slices.Contains(data, utils.ParticipantData{
+			if slices.Contains(data, permission.ParticipantData{
 				UserID:  userId,
 				NewRole: role,
 				ChatID:  channel.ChannelID,
@@ -113,7 +210,7 @@ func (b *Bot) iterateParticipants(ctx context.Context, channel *tg.InputChannel)
 				continue
 			}
 
-			data = append(data, utils.ParticipantData{
+			data = append(data, permission.ParticipantData{
 				UserID:  userId,
 				NewRole: role,
 				ChatID:  channel.ChannelID,
@@ -126,7 +223,7 @@ func (b *Bot) iterateParticipants(ctx context.Context, channel *tg.InputChannel)
 	return &data, nil
 }
 
-func (b *Bot) getChatInfo(ctx context.Context, chatID, actorID int64) (*utils.Chat, error) {
+func (b *Bot) getChatInfo(ctx context.Context, chatID, actorID int64) (*permission.Chat, error) {
 	peer, err := functions.GetInputPeerClassFromId(b.client.PeerStorage, chatID), error(nil)
 	if peer == nil {
 		return nil, errors.New("peer is nil")
@@ -136,8 +233,8 @@ func (b *Bot) getChatInfo(ctx context.Context, chatID, actorID int64) (*utils.Ch
 	}
 
 	var chat tg.ChatClass
-	var info *utils.Chat
-	var users *[]utils.ParticipantData
+	var info *permission.Chat
+	var users *[]permission.ParticipantData
 
 	switch peerResult := peer.(type) {
 	case *tg.InputPeerChat:
@@ -151,7 +248,7 @@ func (b *Bot) getChatInfo(ctx context.Context, chatID, actorID int64) (*utils.Ch
 		}
 
 		chat = chatFull.Chats[0]
-		var usersTemp []utils.ParticipantData
+		var usersTemp []permission.ParticipantData
 		for _, user := range chatFull.Users {
 			if val, ok := user.(*tg.User); ok {
 				if val.Bot {
@@ -159,14 +256,14 @@ func (b *Bot) getChatInfo(ctx context.Context, chatID, actorID int64) (*utils.Ch
 				}
 
 				if val.ID != actorID {
-					usersTemp = append(usersTemp, utils.ParticipantData{
-						NewRole: dto.ViewerRole,
+					usersTemp = append(usersTemp, permission.ParticipantData{
+						NewRole: queries.PlaylistRoleViewer,
 						ChatID:  chatID,
 						UserID:  val.ID,
 					})
 				} else {
-					usersTemp = append(usersTemp, utils.ParticipantData{
-						NewRole: dto.OwnerRole,
+					usersTemp = append(usersTemp, permission.ParticipantData{
+						NewRole: queries.PlaylistRoleOwner,
 						ChatID:  chatID,
 						UserID:  val.ID,
 					})
@@ -198,7 +295,7 @@ func (b *Bot) getChatInfo(ctx context.Context, chatID, actorID int64) (*utils.Ch
 
 	switch c := chat.(type) {
 	case *tg.Chat:
-		info = &utils.Chat{
+		info = &permission.Chat{
 			Title: c.Title,
 			Photo: c.Photo,
 		}
@@ -206,7 +303,7 @@ func (b *Bot) getChatInfo(ctx context.Context, chatID, actorID int64) (*utils.Ch
 			return info, errors.New("no chat users found")
 		}
 	case *tg.Channel:
-		info = &utils.Chat{
+		info = &permission.Chat{
 			Title: c.Title,
 			Photo: c.Photo,
 		}

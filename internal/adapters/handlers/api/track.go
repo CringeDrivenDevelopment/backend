@@ -3,8 +3,9 @@ package api
 import (
 	"backend/cmd/app"
 	"backend/internal/adapters/handlers/api/middlewares"
-	"backend/internal/domain/dto"
-	"backend/internal/domain/service"
+	"backend/internal/domain/playlist"
+	"backend/internal/domain/track"
+	"backend/internal/infra/database/queries"
 	"context"
 	"net/http"
 
@@ -12,17 +13,38 @@ import (
 )
 
 type trackHandler struct {
-	playlistService *service.PlaylistService
-	trackService    *service.TrackService
-	youtubeService  *service.YoutubeService
+	playlistService *playlist.Service
+	trackService    *track.Service
 }
 
 func newTrackHandler(app *app.App) *trackHandler {
 	return &trackHandler{
-		playlistService: service.NewPlaylistService(app),
-		trackService:    service.NewTrackService(app),
-		youtubeService:  service.NewYoutubeService(app),
+		playlistService: playlist.NewService(app),
+		trackService:    track.NewService(app),
 	}
+}
+
+func (h *trackHandler) search(ctx context.Context, input *struct {
+	Query string `query:"query"`
+}) (*struct {
+	Body []track.DtoTrack
+}, error) {
+	val, ok := ctx.Value(middlewares.UserJwtKey).(int64)
+	if !ok {
+		return nil, huma.Error500InternalServerError("User not found in context")
+	}
+	query := input.Query
+
+	if len(input.Query) < 3 {
+		return nil, huma.Error400BadRequest("query too short")
+	}
+
+	search, err := h.trackService.Search(ctx, query, val)
+	if err != nil {
+		return nil, huma.Error500InternalServerError(err.Error(), err)
+	}
+
+	return &struct{ Body []track.DtoTrack }{Body: search}, nil
 }
 
 func (h *trackHandler) submit(ctx context.Context, input *struct {
@@ -39,11 +61,6 @@ func (h *trackHandler) submit(ctx context.Context, input *struct {
 		return nil, huma.Error404NotFound("playlist not found", err)
 	}
 
-	err = h.youtubeService.Download(context.Background(), input.TrackId)
-	if err != nil {
-		return nil, huma.Error500InternalServerError("Youtube download failed", err)
-	}
-
 	return nil, nil
 }
 
@@ -56,16 +73,16 @@ func (h *trackHandler) remove(ctx context.Context, input *struct {
 		return nil, huma.Error500InternalServerError("User not found in context")
 	}
 
-	playlist, err := h.playlistService.GetById(ctx, input.PlaylistId, val)
+	entity, err := h.playlistService.GetById(ctx, input.PlaylistId, val)
 	if err != nil {
 		return nil, huma.Error404NotFound("playlist not found", err)
 	}
 
-	if playlist.Role != dto.ModeratorRole && playlist.Role != dto.OwnerRole {
+	if entity.Role != queries.PlaylistRoleOwner && entity.Role != queries.PlaylistRoleModerator {
 		return nil, huma.Error403Forbidden("action not allowed")
 	}
 
-	err = h.trackService.RemoveApproved(ctx, input.PlaylistId, input.TrackId, val)
+	err = h.trackService.Unapprove(ctx, input.PlaylistId, input.TrackId, val)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("failed to remove from allowed tracks", err)
 	}
@@ -87,12 +104,12 @@ func (h *trackHandler) approve(ctx context.Context, input *struct {
 		return nil, huma.Error500InternalServerError("User not found in context")
 	}
 
-	playlist, err := h.playlistService.GetById(ctx, input.PlaylistId, val)
+	entity, err := h.playlistService.GetById(ctx, input.PlaylistId, val)
 	if err != nil {
 		return nil, huma.Error404NotFound("playlist not found", err)
 	}
 
-	if playlist.Role != dto.ModeratorRole && playlist.Role != dto.OwnerRole {
+	if entity.Role != queries.PlaylistRoleOwner && entity.Role != queries.PlaylistRoleModerator {
 		return nil, huma.Error403Forbidden("action not allowed")
 	}
 
@@ -113,12 +130,12 @@ func (h *trackHandler) decline(ctx context.Context, input *struct {
 		return nil, huma.Error500InternalServerError("User not found in context")
 	}
 
-	playlist, err := h.playlistService.GetById(ctx, input.PlaylistId, val)
+	entity, err := h.playlistService.GetById(ctx, input.PlaylistId, val)
 	if err != nil {
 		return nil, huma.Error404NotFound("playlist not found", err)
 	}
 
-	if playlist.Role != dto.ModeratorRole && playlist.Role != dto.OwnerRole {
+	if entity.Role != queries.PlaylistRoleOwner && entity.Role != queries.PlaylistRoleModerator {
 		return nil, huma.Error403Forbidden("action not allowed")
 	}
 
@@ -131,6 +148,28 @@ func (h *trackHandler) decline(ctx context.Context, input *struct {
 }
 
 func (h *trackHandler) Setup(router huma.API, auth func(ctx huma.Context, next func(ctx huma.Context))) {
+	huma.Register(router, huma.Operation{
+		OperationID: "track-search",
+		Path:        "/api/track/search",
+		Method:      http.MethodGet,
+		Errors: []int{
+			400,
+			401,
+			500,
+		},
+		Tags: []string{
+			"tracks",
+		},
+		Summary:     "Search",
+		Description: "Find tracks by query",
+		Middlewares: huma.Middlewares{auth},
+		Security: []map[string][]string{
+			{
+				"jwt": []string{},
+			},
+		},
+	}, h.search)
+
 	huma.Register(router, huma.Operation{
 		OperationID: "tracks-submit",
 		Path:        "/api/playlists/{playlist_id}/{track_id}/submit",

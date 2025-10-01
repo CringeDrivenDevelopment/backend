@@ -1,3 +1,7 @@
+-- +goose Up
+-- +goose StatementBegin
+SELECT 'up SQL query';
+
 CREATE TYPE playlist_type AS ENUM('spotify', 'youtube', 'yandex', 'deezer', 'soundcloud', 'unknown');
 CREATE TYPE playlist_role AS ENUM('viewer', 'moderator', 'owner', 'group');
 
@@ -15,23 +19,23 @@ CREATE TABLE IF NOT EXISTS playlists (
 );
 
 CREATE TABLE IF NOT EXISTS tracks (
-    id TEXT NOT NULL PRIMARY KEY,
-    title TEXT NOT NULL,
-    authors TEXT NOT NULL,
-    thumbnail TEXT NOT NULL,
-    length INTEGER NOT NULL,
-    explicit BOOLEAN NOT NULL DEFAULT FALSE
+     id TEXT NOT NULL PRIMARY KEY,
+     title TEXT NOT NULL,
+     authors TEXT NOT NULL,
+     thumbnail TEXT NOT NULL,
+     length INTEGER NOT NULL,
+     explicit BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS users (
-    id BIGINT NOT NULL PRIMARY KEY
+      id BIGINT NOT NULL PRIMARY KEY
 );
 
 CREATE TABLE IF NOT EXISTS playlist_permissions (
-    playlist_id TEXT NOT NULL REFERENCES playlists(id) ON DELETE CASCADE,
-    user_id BIGINT NOT NULL REFERENCES users(id),
-    role playlist_role NOT NULL,
-    PRIMARY KEY (playlist_id, user_id)
+      playlist_id TEXT NOT NULL REFERENCES playlists(id) ON DELETE CASCADE,
+      user_id BIGINT NOT NULL REFERENCES users(id),
+      role playlist_role NOT NULL,
+      PRIMARY KEY (playlist_id, user_id)
 );
 
 CREATE OR REPLACE FUNCTION calculate_playlist_time(track_ids TEXT[])
@@ -74,3 +78,26 @@ CREATE INDEX IF NOT EXISTS idx_playlists_tracks ON playlists USING GIN(tracks);
 CREATE INDEX IF NOT EXISTS idx_playlists_allowed_tracks ON playlists USING GIN(allowed_tracks);
 
 CREATE INDEX IF NOT EXISTS idx_permissions_user ON playlist_permissions (user_id);
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+SELECT 'down SQL query';
+
+DROP FUNCTION IF EXISTS update_playlist_on_track_change() CASCADE;
+DROP FUNCTION IF EXISTS update_playlist_time() CASCADE;
+DROP FUNCTION IF EXISTS calculate_playlist_time(TEXT[]) CASCADE;
+
+DROP INDEX IF EXISTS idx_permissions_user;
+DROP INDEX IF EXISTS idx_playlists_allowed_tracks;
+DROP INDEX IF EXISTS idx_playlists_tracks;
+DROP INDEX IF EXISTS idx_tracks_id;
+
+DROP TABLE IF EXISTS playlist_permissions;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS tracks;
+DROP TABLE IF EXISTS playlists;
+
+DROP type playlist_type;
+DROP type playlist_role;
+-- +goose StatementEnd

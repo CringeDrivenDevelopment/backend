@@ -2,7 +2,8 @@ package middlewares
 
 import (
 	"backend/cmd/app"
-	"backend/internal/domain/service"
+	"backend/internal/domain/auth"
+	"backend/internal/domain/user"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -10,8 +11,8 @@ import (
 )
 
 type MiddlewareHandler struct {
-	userService  *service.UserService
-	tokenService *service.TokenService
+	userService  *user.Service
+	tokenService *auth.Service
 	api          huma.API
 	logger       *zap.Logger
 }
@@ -20,8 +21,8 @@ const UserJwtKey = "user"
 
 // NewMiddlewareHandler is a function that returns a new instance of MiddlewareHandler.
 func NewMiddlewareHandler(app *app.App) *MiddlewareHandler {
-	userService := service.NewUserService(app)
-	tokenService := service.NewTokenService(app, time.Hour)
+	userService := user.NewService(app)
+	tokenService := auth.NewService(app, time.Hour)
 
 	return &MiddlewareHandler{
 		userService:  userService,

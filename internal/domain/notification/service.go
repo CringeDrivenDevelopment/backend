@@ -1,4 +1,4 @@
-package service
+package notification
 
 import (
 	"backend/cmd/app"
@@ -6,11 +6,11 @@ import (
 	"gopkg.in/telebot.v4"
 )
 
-type TelegramNotificationService struct {
+type Service struct {
 	client *telebot.Bot
 }
 
-func NewTelegramNotificationService(app *app.App) *TelegramNotificationService {
+func NewService(app *app.App) *Service {
 	token := app.Settings.BotToken
 	if app.Settings.Debug {
 		token += "/test"
@@ -25,12 +25,12 @@ func NewTelegramNotificationService(app *app.App) *TelegramNotificationService {
 		return nil
 	}
 
-	return &TelegramNotificationService{
+	return &Service{
 		client: bot,
 	}
 }
 
-func (s *TelegramNotificationService) Send(chatID int64, text string) error {
+func (s *Service) Send(chatID int64, text string) error {
 	_, err := s.client.Send(&telebot.Chat{
 		ID: chatID,
 	}, text)

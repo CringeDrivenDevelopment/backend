@@ -13,8 +13,6 @@ type Settings struct {
 	DbUrl          string
 	JwtSecret      string   `env:"JWT_SECRET"`
 	VerifiedTokens []string `env:"VERIFIED_BOT_TOKENS"`
-	YoutubeUrl     string   `env:"YOUTUBE_URL" env-default:"https://yt.lxft.tech"`
-	YoutubeToken   string   `env:"YOUTUBE_TOKEN"`
 	MinioBucket    string   `env:"MINIO_BUCKET" env-default:"images"`
 	MinioHost      string   `env:"MINIO_HOST" env-default:"localhost:9000"`
 	MinioSecretKey string   `env:"MINIO_SECRET_KEY" env-default:"minioadmin"`
@@ -27,8 +25,8 @@ type Settings struct {
 	DbHost     string `env:"POSTGRES_HOST" env-default:"localhost"`
 	DbPort     string `env:"POSTGRES_PORT" env-default:"5432"`
 	DbPassword string `env:"POSTGRES_PASSWORD" env-default:"password"`
-	DbUser     string `env:"POSTGRES_USER" env-default:"user"`
-	DbName     string `env:"POSTGRES_DB" env-default:"db"`
+	DbUser     string `env:"POSTGRES_USER" env-default:"postgres"`
+	DbName     string `env:"POSTGRES_DB" env-default:"muse"`
 }
 
 func New() (*Settings, error) {
@@ -41,10 +39,6 @@ func New() (*Settings, error) {
 
 	if cfg.JwtSecret == "" {
 		return nil, errors.New("JWT_SECRET is REQUIRED not to be null")
-	}
-
-	if cfg.YoutubeToken == "" {
-		return nil, errors.New("YOUTUBE_TOKEN is REQUIRED not to be null")
 	}
 
 	if len(cfg.VerifiedTokens) == 0 {
