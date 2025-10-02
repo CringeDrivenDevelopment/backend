@@ -1,9 +1,9 @@
 package main
 
 import (
-	"backend/cmd/app"
-	"backend/internal/adapters/handlers/api"
-	"backend/internal/adapters/handlers/bot"
+	"backend/internal/application"
+	"backend/internal/interfaces/bot"
+	"backend/internal/interfaces/rest"
 	"os"
 	"os/signal"
 	"syscall"
@@ -22,13 +22,13 @@ func main() {
 
 	logger.Info("logger initialized")
 
-	mainApp, err := app.New(logger)
+	mainApp, err := application.New(logger)
 	if err != nil {
 		logger.Panic(err.Error())
 		return
 	}
 
-	api.Setup(mainApp)
+	rest.Setup(mainApp)
 
 	logger.Info("endpoints mapped")
 
