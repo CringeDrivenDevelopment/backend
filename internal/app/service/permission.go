@@ -1,8 +1,8 @@
 package service
 
 import (
-	"backend/internal/application"
-	"backend/internal/application/models"
+	"backend/internal/app"
+	"backend/internal/app/models"
 	"backend/internal/infra/database/queries"
 	"context"
 	"errors"
@@ -15,7 +15,7 @@ type Permission struct {
 	pool *pgxpool.Pool
 }
 
-func NewPermissionService(app *application.App) *Permission {
+func NewPermissionService(app *app.App) *Permission {
 	return &Permission{pool: app.DB}
 }
 

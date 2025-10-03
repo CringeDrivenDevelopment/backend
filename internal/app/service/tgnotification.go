@@ -1,7 +1,7 @@
 package service
 
 import (
-	"backend/internal/application"
+	"backend/internal/app"
 
 	"gopkg.in/telebot.v4"
 )
@@ -10,7 +10,7 @@ type TgNotification struct {
 	client *telebot.Bot
 }
 
-func NewNotificationService(app *application.App) *TgNotification {
+func NewNotificationService(app *app.App) *TgNotification {
 	token := app.Settings.BotToken
 	if app.Settings.Debug {
 		token += "/test"

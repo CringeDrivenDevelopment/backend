@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"backend/internal/application"
-	"backend/internal/application/service"
+	"backend/internal/app"
+	"backend/internal/app/service"
 	"backend/internal/infra/handlers/api/dto"
 	"backend/internal/infra/handlers/api/middlewares"
 	"context"
@@ -23,7 +23,7 @@ type Playlist struct {
 }
 
 // NewPlaylist - создать новый экземпляр обработчика
-func NewPlaylist(app *application.App) *Playlist {
+func NewPlaylist(app *app.App) *Playlist {
 	return &Playlist{
 		playlistService:     service.NewPlaylistService(app),
 		permissionService:   service.NewPermissionService(app),

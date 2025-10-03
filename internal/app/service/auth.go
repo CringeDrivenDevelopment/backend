@@ -1,7 +1,7 @@
 package service
 
 import (
-	"backend/internal/application"
+	"backend/internal/app"
 	"backend/internal/infra/handlers/api/dto"
 	"errors"
 	"net/url"
@@ -22,7 +22,7 @@ type Auth struct {
 }
 
 // NewAuthService - создать новый экземпляр сервиса авторизации
-func NewAuthService(app *application.App, expires time.Duration) *Auth {
+func NewAuthService(app *app.App, expires time.Duration) *Auth {
 	return &Auth{secret: app.Settings.JwtSecret, botToken: app.Settings.BotToken, expires: expires}
 }
 

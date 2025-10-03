@@ -1,7 +1,7 @@
 package service
 
 import (
-	"backend/internal/application"
+	"backend/internal/app"
 	"backend/internal/infra/database/queries"
 	"context"
 	"errors"
@@ -14,7 +14,7 @@ type User struct {
 	pool *pgxpool.Pool
 }
 
-func NewUserService(app *application.App) *User {
+func NewUserService(app *app.App) *User {
 	return &User{pool: app.DB}
 }
 

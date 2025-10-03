@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"backend/internal/application"
-	"backend/internal/application/service"
+	"backend/internal/app"
+	"backend/internal/app/service"
 	"backend/internal/infra/database/queries"
 	"backend/internal/infra/handlers/api/dto"
 	"backend/internal/infra/handlers/api/middlewares"
@@ -22,10 +22,11 @@ type Track struct {
 	logger *zap.Logger
 }
 
-func NewTrack(app *application.App) *Track {
+func NewTrack(app *app.App) *Track {
 	return &Track{
 		playlistService: service.NewPlaylistService(app),
 		trackService:    service.NewTrackService(app),
+		logger:          app.Logger,
 	}
 }
 
@@ -43,7 +44,7 @@ func (h *Track) search(ctx context.Context, input *struct {
 	}
 	query := input.Query
 
-	h.logger.Warn(fmt.Sprintf("track search: user_id - %d, query - %s", val, input.Query))
+	h.logger.Warn(fmt.Sprintf("track search: user_id - %d, query - %s", val, query))
 
 	if len(input.Query) < 3 {
 		return nil, huma.Error400BadRequest("query too short")

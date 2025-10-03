@@ -1,8 +1,8 @@
 package middlewares
 
 import (
-	"backend/internal/application"
-	"backend/internal/application/service"
+	"backend/internal/app"
+	"backend/internal/app/service"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -19,7 +19,7 @@ type Auth struct {
 const UserJwtKey = "user"
 
 // NewAuth - создать новый обработчик для middleware
-func NewAuth(app *application.App) *Auth {
+func NewAuth(app *app.App) *Auth {
 	userService := service.NewUserService(app)
 	tokenService := service.NewAuthService(app, time.Hour)
 

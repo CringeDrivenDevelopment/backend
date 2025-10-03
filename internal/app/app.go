@@ -1,4 +1,4 @@
-package application
+package app
 
 import (
 	"backend/internal/infra/database"

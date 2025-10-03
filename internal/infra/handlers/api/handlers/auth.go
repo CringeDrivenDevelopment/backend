@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"backend/internal/application"
-	"backend/internal/application/service"
+	"backend/internal/app"
+	"backend/internal/app/service"
 	"backend/internal/infra/handlers/api/dto"
 	"context"
 	"errors"
@@ -21,7 +21,7 @@ type User struct {
 }
 
 // NewAuth - создать новый экземпляр обработчика
-func NewAuth(app *application.App) *User {
+func NewAuth(app *app.App) *User {
 	userService := service.NewUserService(app)
 	tokenService := service.NewAuthService(app, time.Hour)
 

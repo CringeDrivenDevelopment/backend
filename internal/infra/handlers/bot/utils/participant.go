@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"backend/internal/application/models"
+	"backend/internal/app/models"
 	"errors"
 
 	"github.com/celestix/gotgproto/ext"

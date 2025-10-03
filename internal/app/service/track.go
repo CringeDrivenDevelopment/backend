@@ -1,7 +1,7 @@
 package service
 
 import (
-	"backend/internal/application"
+	"backend/internal/app"
 	"backend/internal/infra/database/queries"
 	"backend/internal/infra/handlers/api/dto"
 	"backend/internal/infra/youtube"
@@ -19,7 +19,7 @@ type Track struct {
 	ytApi *youtube.Service
 }
 
-func NewTrackService(app *application.App) *Track {
+func NewTrackService(app *app.App) *Track {
 	return &Track{pool: app.DB, ytApi: youtube.NewService()}
 }
 

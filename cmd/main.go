@@ -1,7 +1,7 @@
 package main
 
 import (
-	"backend/internal/application"
+	"backend/internal/app"
 	"backend/internal/infra/handlers/api"
 	"backend/internal/infra/handlers/bot"
 	"os"
@@ -22,7 +22,7 @@ func main() {
 
 	logger.Info("logger initialized")
 
-	mainApp, err := application.New(logger)
+	mainApp, err := app.New(logger)
 	if err != nil {
 		logger.Panic(err.Error())
 		return

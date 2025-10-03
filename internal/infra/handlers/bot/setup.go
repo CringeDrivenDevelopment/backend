@@ -1,8 +1,8 @@
 package bot
 
 import (
-	"backend/internal/application"
-	"backend/internal/application/service"
+	"backend/internal/app"
+	"backend/internal/app/service"
 
 	"github.com/celestix/gotgproto"
 	"github.com/celestix/gotgproto/dispatcher/handlers"
@@ -24,7 +24,7 @@ type Bot struct {
 	client *gotgproto.Client
 }
 
-func New(app *application.App) (*Bot, error) {
+func New(app *app.App) (*Bot, error) {
 	var dcList dcs.List
 
 	if app.Settings.Debug {

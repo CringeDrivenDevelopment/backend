@@ -1,7 +1,7 @@
 package api
 
 import (
-	"backend/internal/application"
+	"backend/internal/app"
 	"backend/internal/infra/handlers/api/handlers"
 	"backend/internal/infra/handlers/api/middlewares"
 	"net/http"
@@ -10,7 +10,7 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 )
 
-func Setup(app *application.App) {
+func Setup(app *app.App) {
 	app.Server.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins: []string{
 			"https://tg-mini-app.local",
@@ -26,7 +26,9 @@ func Setup(app *application.App) {
 	app.Server.Use(middlewares.ZapLogger(app.Logger))
 
 	// recover from panic
-	app.Server.Use(middleware.Recover())
+	if !app.Settings.Debug {
+		app.Server.Use(middleware.Recover())
+	}
 
 	// Provide a minimal config for startup check
 	app.Server.GET("/api/ping", func(c echo.Context) error {
@@ -34,6 +36,8 @@ func Setup(app *application.App) {
 	})
 
 	authMiddleware := middlewares.NewAuth(app)
+
+	// TODO: add image proxy, sound proxy, DL
 
 	// Добавить маршруты до основного API
 	handlers.NewAuth(app).Setup(app.Api)

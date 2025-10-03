@@ -109,7 +109,7 @@ func (h *Track) Setup(router huma.API, auth func(ctx huma.Context, next func(ctx
 		Tags: []string{
 			"tracks",
 		},
-		Summary:     "Playlist Submit",
+		Summary:     "Submit",
 		Description: "Добавить трек в плейлист, если юзер есть в плейлисте. Если у юзера права админа, то трек добавляется в разрешённые, иначе на модерацию",
 		Middlewares: huma.Middlewares{auth},
 		Security: []map[string][]string{
@@ -132,7 +132,7 @@ func (h *Track) Setup(router huma.API, auth func(ctx huma.Context, next func(ctx
 		Tags: []string{
 			"tracks",
 		},
-		Summary:     "Playlist Unapprove",
+		Summary:     "Unapprove",
 		Description: "Убрать трек из разрешённых. У юзера должны быть права админа",
 		Middlewares: huma.Middlewares{auth},
 		Security: []map[string][]string{
@@ -154,7 +154,7 @@ func (h *Track) Setup(router huma.API, auth func(ctx huma.Context, next func(ctx
 		Tags: []string{
 			"tracks",
 		},
-		Summary:     "Playlist Approve",
+		Summary:     "Approve",
 		Description: "Добавить трек в разрешённые. У юзера должны быть права админа",
 		Middlewares: huma.Middlewares{auth},
 		Security: []map[string][]string{
@@ -178,7 +178,7 @@ func (h *Track) Setup(router huma.API, auth func(ctx huma.Context, next func(ctx
 		Tags: []string{
 			"tracks",
 		},
-		Summary:     "Playlist Decline",
+		Summary:     "Decline",
 		Description: "Удалить трек из кандидатов в плейлист. У юзера должны быть права админа",
 		Middlewares: huma.Middlewares{auth},
 		Security: []map[string][]string{
