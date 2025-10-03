@@ -3,7 +3,7 @@ package service
 import (
 	"backend/internal/application"
 	"backend/internal/domain/models"
-	queries2 "backend/internal/domain/queries"
+	"backend/internal/infra/database/queries"
 	"context"
 	"errors"
 
@@ -19,14 +19,14 @@ func NewPermissionService(app *application.App) *Permission {
 	return &Permission{pool: app.DB}
 }
 
-func (s *Permission) Add(ctx context.Context, role queries2.PlaylistRole, playlist string, userId int64) error {
+func (s *Permission) Add(ctx context.Context, role queries.PlaylistRole, playlist string, userId int64) error {
 	tx, txErr := s.pool.BeginTx(ctx, pgx.TxOptions{})
 	if txErr != nil {
 		return txErr
 	}
 
-	q := queries2.New(tx)
-	rq := queries2.New(s.pool)
+	q := queries.New(tx)
+	rq := queries.New(s.pool)
 	_, err := rq.GetUserById(ctx, userId)
 	if err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) {
@@ -41,7 +41,7 @@ func (s *Permission) Add(ctx context.Context, role queries2.PlaylistRole, playli
 			return err
 		}
 	}
-	err = q.CreateRole(ctx, queries2.CreateRoleParams{
+	err = q.CreateRole(ctx, queries.CreateRoleParams{
 		Role:       role,
 		UserID:     userId,
 		PlaylistID: playlist,
@@ -72,8 +72,8 @@ func (s *Permission) AddGroup(ctx context.Context, playlist string, users []mode
 		return txErr
 	}
 
-	q := queries2.New(tx)
-	rq := queries2.New(s.pool)
+	q := queries.New(tx)
+	rq := queries.New(s.pool)
 	for _, user := range users {
 		_, err := rq.GetUserById(ctx, user.UserID)
 		if err != nil {
@@ -90,7 +90,7 @@ func (s *Permission) AddGroup(ctx context.Context, playlist string, users []mode
 			}
 		}
 
-		err = q.CreateRole(ctx, queries2.CreateRoleParams{
+		err = q.CreateRole(ctx, queries.CreateRoleParams{
 			Role:       user.NewRole,
 			UserID:     user.UserID,
 			PlaylistID: playlist,
@@ -122,8 +122,8 @@ func (s *Permission) Remove(ctx context.Context, playlist string, userId int64) 
 		return txErr
 	}
 
-	q := queries2.New(tx)
-	err := q.DeleteRole(ctx, queries2.DeleteRoleParams{
+	q := queries.New(tx)
+	err := q.DeleteRole(ctx, queries.DeleteRoleParams{
 		PlaylistID: playlist,
 		UserID:     userId,
 	})
@@ -147,14 +147,14 @@ func (s *Permission) Remove(ctx context.Context, playlist string, userId int64) 
 	return nil
 }
 
-func (s *Permission) Edit(ctx context.Context, role queries2.PlaylistRole, playlist string, userId int64) error {
+func (s *Permission) Edit(ctx context.Context, role queries.PlaylistRole, playlist string, userId int64) error {
 	tx, txErr := s.pool.BeginTx(ctx, pgx.TxOptions{})
 	if txErr != nil {
 		return txErr
 	}
 
-	q := queries2.New(tx)
-	err := q.EditRole(ctx, queries2.EditRoleParams{
+	q := queries.New(tx)
+	err := q.EditRole(ctx, queries.EditRoleParams{
 		Role:       role,
 		PlaylistID: playlist,
 		UserID:     userId,
@@ -180,9 +180,9 @@ func (s *Permission) Edit(ctx context.Context, role queries2.PlaylistRole, playl
 	return nil
 }
 
-func (s *Permission) Get(ctx context.Context, userId int64, role queries2.PlaylistRole) (string, error) {
-	q := queries2.New(s.pool)
-	playlistId, err := q.GetRole(ctx, queries2.GetRoleParams{
+func (s *Permission) Get(ctx context.Context, userId int64, role queries.PlaylistRole) (string, error) {
+	q := queries.New(s.pool)
+	playlistId, err := q.GetRole(ctx, queries.GetRoleParams{
 		Role:   role,
 		UserID: userId,
 	})

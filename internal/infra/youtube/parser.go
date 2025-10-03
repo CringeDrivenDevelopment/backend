@@ -7,59 +7,6 @@ import (
 	"strings"
 )
 
-const (
-	FILTER_VIDEO = "EgWKAQIQAWoIEAMQBBAJEAo%3D"
-	FILTER_SONGS = "EgWKAQIIAWoOEAMQCRAKEAQQERAQEBU%3D"
-)
-
-type Track struct {
-	Id        string `json:"id"`
-	Title     string `json:"title"`
-	Authors   string `json:"artists"`
-	Thumbnail string `json:"thumbnail"`
-	Length    int    `json:"length"`
-	Explicit  bool   `json:"explicit"`
-}
-
-type RawYtMusicSong struct {
-	Thumbnail   Thumbnail    `json:"thumbnail"`
-	FlexColumns []FlexColumn `json:"flexColumns"`
-	Badges      []Badge      `json:"badges,omitempty"`
-}
-
-type Thumbnail struct {
-	Renderer struct {
-		Data struct {
-			Items []struct {
-				Url string `json:"url"`
-			} `json:"thumbnails"`
-		} `json:"thumbnail"`
-	} `json:"musicThumbnailRenderer"`
-}
-
-type FlexColumn struct {
-	Renderer struct {
-		Data struct {
-			Runs []struct {
-				Text               string `json:"text"`
-				NavigationEndpoint struct {
-					WatchEndpoint struct {
-						VideoId string `json:"videoId"`
-					} `json:"watchEndpoint,omitempty"`
-				} `json:"navigationEndpoint,omitempty"`
-			} `json:"runs"`
-		} `json:"text"`
-	} `json:"musicResponsiveListItemFlexColumnRenderer"`
-}
-
-type Badge struct {
-	Renderer struct {
-		Icon struct {
-			IconType string `json:"iconType"`
-		} `json:"icon"`
-	} `json:"musicInlineBadgeRenderer"`
-}
-
 func getBestThumbnail(thumbnail Thumbnail) string {
 	url := thumbnail.Renderer.Data.Items[0].Url
 

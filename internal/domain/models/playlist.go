@@ -1,7 +1,7 @@
 package models
 
 import (
-	"backend/internal/domain/queries"
+	"backend/internal/infra/database/queries"
 )
 
 type DtoPlaylist struct {

@@ -1,8 +1,8 @@
 package application
 
 import (
-	"backend/internal/infra/config"
 	"backend/internal/infra/database"
+	"backend/pkg/config"
 	"context"
 	"io"
 

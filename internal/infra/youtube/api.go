@@ -8,48 +8,6 @@ import (
 	"github.com/bytedance/sonic"
 )
 
-type SearchResponse struct {
-	Contents struct {
-		TabbedSearchResultsRenderer struct {
-			Tabs []struct {
-				TabRenderer struct {
-					Content struct {
-						SectionListRenderer struct {
-							Contents []struct {
-								MusicShelfRenderer struct {
-									Contents *[]struct {
-										Data RawYtMusicSong `json:"musicResponsiveListItemRenderer"`
-									} `json:"contents"`
-								} `json:"musicShelfRenderer"`
-							} `json:"contents"`
-						} `json:"sectionListRenderer"`
-					} `json:"content"`
-				} `json:"tabRenderer"`
-			} `json:"tabs"`
-		} `json:"tabbedSearchResultsRenderer"`
-	} `json:"contents"`
-}
-
-type SearchRequest struct {
-	Context struct {
-		Client struct {
-			Hl            string `json:"hl"`
-			Gl            string `json:"gl"`
-			ClientName    string `json:"clientName"`
-			ClientVersion string `json:"clientVersion"`
-			OriginalUrl   string `json:"originalUrl"`
-		} `json:"client"`
-		User struct {
-			LockedSafetyMode bool `json:"lockedSafetyMode"`
-		} `json:"user"`
-		Request struct {
-			UseSsl bool `json:"useSsl"`
-		} `json:"request"`
-	} `json:"context"`
-	Query  string `json:"query"`
-	Params string `json:"params"`
-}
-
 type Service struct {
 	client *http.Client
 }

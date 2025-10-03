@@ -2,6 +2,7 @@ package database
 
 import (
 	projectroot "backend"
+	"backend/internal/infra/database/queries"
 	"context"
 	"time"
 
@@ -44,4 +45,17 @@ func NewConnection(ctx context.Context, connUrl string) (*pgxpool.Pool, error) {
 	}
 
 	return pool, nil
+}
+
+func NewQuery(pool *pgxpool.Pool) *queries.Queries {
+	return queries.New(pool)
+}
+
+func NewTxQuery(ctx context.Context, pool *pgxpool.Pool) (*queries.Queries, error) {
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return queries.New(tx), nil
 }

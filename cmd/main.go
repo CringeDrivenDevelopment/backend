@@ -2,8 +2,8 @@ package main
 
 import (
 	"backend/internal/application"
-	"backend/internal/interfaces/bot"
-	"backend/internal/interfaces/rest"
+	"backend/internal/infra/handlers/api"
+	"backend/internal/infra/handlers/bot"
 	"os"
 	"os/signal"
 	"syscall"
@@ -28,7 +28,7 @@ func main() {
 		return
 	}
 
-	rest.Setup(mainApp)
+	api.Setup(mainApp)
 
 	logger.Info("endpoints mapped")
 

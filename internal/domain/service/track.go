@@ -3,7 +3,7 @@ package service
 import (
 	"backend/internal/application"
 	"backend/internal/domain/models"
-	queries2 "backend/internal/domain/queries"
+	"backend/internal/infra/database/queries"
 	"backend/internal/infra/youtube"
 	"context"
 	"errors"
@@ -66,17 +66,17 @@ func (s *Track) Search(ctx context.Context, query string, userId int64) ([]model
 		}
 	}
 
-	rq := queries2.New(s.pool)
+	rq := queries.New(s.pool)
 	trackTx, err := s.pool.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return nil, err
 	}
-	q := queries2.New(trackTx)
+	q := queries.New(trackTx)
 
 	for i, track := range tracks {
 		_, err := rq.GetTrackById(ctx, track.Id)
 		if errors.Is(err, pgx.ErrNoRows) {
-			err = q.CreateTrack(ctx, queries2.CreateTrackParams{
+			err = q.CreateTrack(ctx, queries.CreateTrackParams{
 				ID:        track.Id,
 				Title:     track.Title,
 				Authors:   track.Authors,
@@ -94,7 +94,7 @@ func (s *Track) Search(ctx context.Context, query string, userId int64) ([]model
 			return nil, err
 		}
 
-		playlistIds, err := rq.GetTrackPlaylists(ctx, queries2.GetTrackPlaylistsParams{
+		playlistIds, err := rq.GetTrackPlaylists(ctx, queries.GetTrackPlaylistsParams{
 			TrackID: track.Id,
 			UserID:  userId,
 		})
@@ -114,7 +114,7 @@ func (s *Track) Search(ctx context.Context, query string, userId int64) ([]model
 }
 
 func (s *Track) GetById(ctx context.Context, id string) (models.DtoTrack, error) {
-	q := queries2.New(s.pool)
+	q := queries.New(s.pool)
 	track, err := q.GetTrackById(ctx, id)
 	if err != nil {
 		return models.DtoTrack{}, err
@@ -131,8 +131,8 @@ func (s *Track) GetById(ctx context.Context, id string) (models.DtoTrack, error)
 }
 
 func (s *Track) Approve(ctx context.Context, playlistId, trackId string, userId int64) error {
-	rq := queries2.New(s.pool)
-	playlist, err := rq.GetPlaylistById(ctx, queries2.GetPlaylistByIdParams{
+	rq := queries.New(s.pool)
+	playlist, err := rq.GetPlaylistById(ctx, queries.GetPlaylistByIdParams{
 		PlaylistID: playlistId,
 		UserID:     userId,
 	})
@@ -152,9 +152,9 @@ func (s *Track) Approve(ctx context.Context, playlistId, trackId string, userId 
 	if txErr != nil {
 		return txErr
 	}
-	q := queries2.New(tx)
+	q := queries.New(tx)
 
-	err = q.EditPlaylist(ctx, queries2.EditPlaylistParams{
+	err = q.EditPlaylist(ctx, queries.EditPlaylistParams{
 		ID:            playlistId,
 		AllowedTracks: append(playlist.AllowedTracks, trackId),
 	})
@@ -177,8 +177,8 @@ func (s *Track) Approve(ctx context.Context, playlistId, trackId string, userId 
 }
 
 func (s *Track) Decline(ctx context.Context, playlistId, trackId string, userId int64) error {
-	rq := queries2.New(s.pool)
-	playlist, err := rq.GetPlaylistById(ctx, queries2.GetPlaylistByIdParams{
+	rq := queries.New(s.pool)
+	playlist, err := rq.GetPlaylistById(ctx, queries.GetPlaylistByIdParams{
 		PlaylistID: playlistId,
 		UserID:     userId,
 	})
@@ -201,9 +201,9 @@ func (s *Track) Decline(ctx context.Context, playlistId, trackId string, userId 
 	if txErr != nil {
 		return txErr
 	}
-	q := queries2.New(tx)
+	q := queries.New(tx)
 
-	err = q.EditPlaylist(ctx, queries2.EditPlaylistParams{
+	err = q.EditPlaylist(ctx, queries.EditPlaylistParams{
 		ID:            playlistId,
 		AllowedTracks: playlist.AllowedTracks,
 	})
@@ -226,8 +226,8 @@ func (s *Track) Decline(ctx context.Context, playlistId, trackId string, userId 
 }
 
 func (s *Track) Submit(ctx context.Context, playlistId, trackId string, userId int64) error {
-	rq := queries2.New(s.pool)
-	playlist, err := rq.GetPlaylistById(ctx, queries2.GetPlaylistByIdParams{
+	rq := queries.New(s.pool)
+	playlist, err := rq.GetPlaylistById(ctx, queries.GetPlaylistByIdParams{
 		PlaylistID: playlistId,
 		UserID:     userId,
 	})
@@ -241,10 +241,10 @@ func (s *Track) Submit(ctx context.Context, playlistId, trackId string, userId i
 
 	tracks := playlist.Tracks
 	allowedTracks := playlist.AllowedTracks
-	if (playlist.Role == queries2.PlaylistRoleOwner || playlist.Role == queries2.PlaylistRoleModerator) && !slices.Contains(allowedTracks, trackId) {
+	if (playlist.Role == queries.PlaylistRoleOwner || playlist.Role == queries.PlaylistRoleModerator) && !slices.Contains(allowedTracks, trackId) {
 		tracks = append(tracks, trackId)
 		allowedTracks = append(allowedTracks, trackId)
-	} else if !slices.Contains(tracks, trackId) && playlist.Role == queries2.PlaylistRoleViewer {
+	} else if !slices.Contains(tracks, trackId) && playlist.Role == queries.PlaylistRoleViewer {
 		tracks = append(tracks, trackId)
 	} else {
 		return nil
@@ -254,9 +254,9 @@ func (s *Track) Submit(ctx context.Context, playlistId, trackId string, userId i
 	if txErr != nil {
 		return txErr
 	}
-	q := queries2.New(tx)
+	q := queries.New(tx)
 
-	err = q.EditPlaylist(ctx, queries2.EditPlaylistParams{
+	err = q.EditPlaylist(ctx, queries.EditPlaylistParams{
 		ID:            playlistId,
 		Tracks:        tracks,
 		AllowedTracks: allowedTracks,
@@ -276,8 +276,8 @@ func (s *Track) Submit(ctx context.Context, playlistId, trackId string, userId i
 }
 
 func (s *Track) Unapprove(ctx context.Context, playlistId, trackId string, userId int64) error {
-	rq := queries2.New(s.pool)
-	playlist, err := rq.GetPlaylistById(ctx, queries2.GetPlaylistByIdParams{
+	rq := queries.New(s.pool)
+	playlist, err := rq.GetPlaylistById(ctx, queries.GetPlaylistByIdParams{
 		PlaylistID: playlistId,
 		UserID:     userId,
 	})
@@ -300,9 +300,9 @@ func (s *Track) Unapprove(ctx context.Context, playlistId, trackId string, userI
 	if txErr != nil {
 		return txErr
 	}
-	q := queries2.New(tx)
+	q := queries.New(tx)
 
-	err = q.EditPlaylist(ctx, queries2.EditPlaylistParams{
+	err = q.EditPlaylist(ctx, queries.EditPlaylistParams{
 		ID:            playlistId,
 		AllowedTracks: playlist.AllowedTracks,
 	})

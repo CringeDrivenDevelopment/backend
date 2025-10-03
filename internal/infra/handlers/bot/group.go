@@ -1,7 +1,7 @@
 package bot
 
 import (
-	"backend/internal/domain/queries"
+	"backend/internal/infra/database/queries"
 	"errors"
 	"strconv"
 

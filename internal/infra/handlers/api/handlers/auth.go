@@ -1,12 +1,11 @@
-package rest
+package handlers
 
 import (
 	"backend/internal/application"
-	"backend/internal/application/service"
 	"backend/internal/domain/models"
+	"backend/internal/domain/service"
 	"context"
 	"errors"
-	"net/http"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -14,19 +13,19 @@ import (
 	"go.uber.org/zap"
 )
 
-type userHandler struct {
+type User struct {
 	userService  *service.User
 	tokenService *service.Auth
 
 	logger *zap.Logger
 }
 
-// newUserHandler - создать новый экземпляр обработчика
-func newUserHandler(app *application.App) *userHandler {
+// NewAuth - создать новый экземпляр обработчика
+func NewAuth(app *application.App) *User {
 	userService := service.NewUserService(app)
 	tokenService := service.NewAuthService(app, time.Hour)
 
-	return &userHandler{
+	return &User{
 		userService:  userService,
 		tokenService: tokenService,
 		logger:       app.Logger,
@@ -34,25 +33,29 @@ func newUserHandler(app *application.App) *userHandler {
 }
 
 // login - Получить токен для взаимодействия. Нуждается в InitDataRaw строке из Telegram Mini App. Действует 1 час
-func (h *userHandler) login(ctx context.Context, input *models.AuthInputStruct) (*models.AuthOutputStruct, error) {
+func (h *User) login(ctx context.Context, input *models.AuthInputStruct) (*models.AuthOutputStruct, error) {
 	userDTO := input.Body
 
 	id, tgErr := h.tokenService.ParseInitData(userDTO.InitDataRaw)
 	if tgErr != nil {
-		return nil, tgErr
+		h.logger.Warn("auth data error", zap.Error(tgErr))
+
+		return nil, huma.Error401Unauthorized("invalid auth data")
 	}
 
 	errFetch := h.userService.GetByID(ctx, id)
 	if errFetch != nil {
 		if !errors.Is(errFetch, pgx.ErrNoRows) {
-			h.logger.Warn("error fetching user", zap.Error(errFetch))
+			h.logger.Error("error fetching user", zap.Error(errFetch))
+
 			return nil, huma.Error500InternalServerError("internal server error")
 		}
 
 		createErr := h.userService.Create(ctx, id)
 
 		if createErr != nil {
-			h.logger.Warn("error creating user", zap.Error(createErr))
+			h.logger.Error("error creating user", zap.Error(createErr))
+
 			return nil, huma.Error500InternalServerError("internal server error")
 		}
 	}
@@ -69,23 +72,4 @@ func (h *userHandler) login(ctx context.Context, input *models.AuthInputStruct) 
 	}
 
 	return &models.AuthOutputStruct{Body: tokenData}, nil
-}
-
-// Setup - добавить маршрут до эндпоинта
-func (h *userHandler) Setup(router huma.API) {
-	huma.Register(router, huma.Operation{
-		OperationID: "login",
-		Path:        "/api/login",
-		Method:      http.MethodPost,
-		Errors: []int{
-			400,
-			401,
-			500,
-		},
-		Tags: []string{
-			"auth",
-		},
-		Summary:     "Login",
-		Description: "Получить токен для взаимодействия. Нуждается в InitDataRaw строке из Telegram Mini App. Действует 1 час",
-	}, h.login)
 }

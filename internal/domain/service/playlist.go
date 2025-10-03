@@ -3,7 +3,7 @@ package service
 import (
 	"backend/internal/application"
 	"backend/internal/domain/models"
-	"backend/internal/domain/queries"
+	"backend/internal/infra/database/queries"
 	"context"
 
 	"github.com/jackc/pgx/v5"

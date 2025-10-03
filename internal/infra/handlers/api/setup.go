@@ -1,8 +1,9 @@
-package rest
+package api
 
 import (
 	"backend/internal/application"
-	"backend/internal/interfaces/rest/middlewares"
+	"backend/internal/infra/handlers/api/handlers"
+	"backend/internal/infra/handlers/api/middlewares"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -32,12 +33,10 @@ func Setup(app *application.App) {
 		return c.String(http.StatusOK, "pong")
 	})
 
-	middlewareHandler := middlewares.NewAuth(app)
-	//
-	// Setup user routes
-	newUserHandler(app).Setup(app.Api)
+	authMiddleware := middlewares.NewAuth(app)
 
-	newPlaylistsHandler(app).Setup(app.Api, middlewareHandler.IsAuthenticated)
-
-	newTrackHandler(app).Setup(app.Api, middlewareHandler.IsAuthenticated)
+	// Добавить маршруты до основного API
+	handlers.NewAuth(app).Setup(app.Api)
+	handlers.NewPlaylist(app).Setup(app.Api, authMiddleware.IsAuthenticated)
+	handlers.NewTrack(app).Setup(app.Api, authMiddleware.IsAuthenticated)
 }
