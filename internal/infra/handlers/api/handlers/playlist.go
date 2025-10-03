@@ -2,8 +2,8 @@ package handlers
 
 import (
 	"backend/internal/application"
-	"backend/internal/domain/models"
-	"backend/internal/domain/service"
+	"backend/internal/application/service"
+	"backend/internal/infra/handlers/api/dto"
 	"backend/internal/infra/handlers/api/middlewares"
 	"context"
 	"errors"
@@ -36,7 +36,7 @@ func NewPlaylist(app *application.App) *Playlist {
 func (h *Playlist) getById(ctx context.Context, input *struct {
 	Id string `path:"id" minLength:"26" maxLength:"26" example:"01JZ35PYGP6HJA08H0NHYPBHWD" doc:"playlist id"`
 }) (*struct {
-	Body models.DtoPlaylist
+	Body dto.Playlist
 }, error) {
 	val, ok := ctx.Value(middlewares.UserJwtKey).(int64)
 	if !ok {
@@ -58,12 +58,12 @@ func (h *Playlist) getById(ctx context.Context, input *struct {
 		return nil, huma.Error500InternalServerError("internal server error")
 	}
 
-	return &struct{ Body models.DtoPlaylist }{Body: resp}, nil
+	return &struct{ Body dto.Playlist }{Body: resp}, nil
 }
 
 // getAll - получить список плейлистов для пользователя
 func (h *Playlist) getAll(ctx context.Context, _ *struct{}) (*struct {
-	Body []models.DtoPlaylist
+	Body []dto.Playlist
 }, error) {
 	val, ok := ctx.Value(middlewares.UserJwtKey).(int64)
 	if !ok {
@@ -79,5 +79,5 @@ func (h *Playlist) getAll(ctx context.Context, _ *struct{}) (*struct {
 		return nil, huma.Error500InternalServerError("internal server error")
 	}
 
-	return &struct{ Body []models.DtoPlaylist }{Body: resp}, nil
+	return &struct{ Body []dto.Playlist }{Body: resp}, nil
 }

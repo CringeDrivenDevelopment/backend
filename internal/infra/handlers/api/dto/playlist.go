@@ -1,14 +1,14 @@
-package models
+package dto
 
 import (
 	"backend/internal/infra/database/queries"
 )
 
-type DtoPlaylist struct {
+type Playlist struct {
 	Id            string               `json:"id"`
 	Title         string               `json:"title"`
 	Thumbnail     string               `json:"thumbnail"`
-	Tracks        []DtoTrack           `json:"tracks,omitempty"`
+	Tracks        []Track              `json:"tracks,omitempty"`
 	AllowedIds    []string             `json:"allowed_ids,omitempty"`
 	Count         int                  `json:"count"`
 	AllowedCount  int                  `json:"allowed_count"`

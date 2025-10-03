@@ -2,7 +2,7 @@ package bot
 
 import (
 	"backend/internal/application"
-	service2 "backend/internal/domain/service"
+	"backend/internal/application/service"
 
 	"github.com/celestix/gotgproto"
 	"github.com/celestix/gotgproto/dispatcher/handlers"
@@ -15,8 +15,8 @@ import (
 )
 
 type Bot struct {
-	playlistService   *service2.Playlist
-	permissionService *service2.Permission
+	playlistService   *service.Playlist
+	permissionService *service.Permission
 	logger            *zap.Logger
 	// dl                *downloader.Downloader
 	// s3                *service.S3Service
@@ -59,8 +59,8 @@ func New(app *application.App) (*Bot, error) {
 	*/
 
 	return &Bot{
-		playlistService:   service2.NewPlaylistService(app),
-		permissionService: service2.NewPermissionService(app),
+		playlistService:   service.NewPlaylistService(app),
+		permissionService: service.NewPermissionService(app),
 		// 	dl:                downloader.NewDownloader(),
 		//	s3:                s3Service,
 		client: client,

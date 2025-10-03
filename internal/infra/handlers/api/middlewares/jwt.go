@@ -2,7 +2,7 @@ package middlewares
 
 import (
 	"backend/internal/application"
-	service2 "backend/internal/domain/service"
+	"backend/internal/application/service"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -10,8 +10,8 @@ import (
 )
 
 type Auth struct {
-	userService  *service2.User
-	tokenService *service2.Auth
+	userService  *service.User
+	tokenService *service.Auth
 	api          huma.API
 	logger       *zap.Logger
 }
@@ -20,8 +20,8 @@ const UserJwtKey = "user"
 
 // NewAuth - создать новый обработчик для middleware
 func NewAuth(app *application.App) *Auth {
-	userService := service2.NewUserService(app)
-	tokenService := service2.NewAuthService(app, time.Hour)
+	userService := service.NewUserService(app)
+	tokenService := service.NewAuthService(app, time.Hour)
 
 	return &Auth{
 		userService:  userService,

@@ -2,8 +2,8 @@ package service
 
 import (
 	"backend/internal/application"
-	"backend/internal/domain/models"
 	"backend/internal/infra/database/queries"
+	dto2 "backend/internal/infra/handlers/api/dto"
 	"context"
 
 	"github.com/jackc/pgx/v5"
@@ -19,10 +19,10 @@ func NewPlaylistService(app *application.App) *Playlist {
 	return &Playlist{pool: app.DB}
 }
 
-func (s *Playlist) Create(ctx context.Context, title string, playlistType queries.PlaylistType) (models.DtoPlaylist, error) {
+func (s *Playlist) Create(ctx context.Context, title string, playlistType queries.PlaylistType) (dto2.Playlist, error) {
 	tx, txErr := s.pool.BeginTx(ctx, pgx.TxOptions{})
 	if txErr != nil {
-		return models.DtoPlaylist{}, txErr
+		return dto2.Playlist{}, txErr
 	}
 
 	id := ulid.Make().String()
@@ -38,19 +38,19 @@ func (s *Playlist) Create(ctx context.Context, title string, playlistType querie
 		Type:          queries.NullPlaylistType{PlaylistType: playlistType, Valid: true},
 	}); err != nil {
 		if txErr := tx.Rollback(ctx); txErr != nil {
-			return models.DtoPlaylist{}, txErr
+			return dto2.Playlist{}, txErr
 		}
-		return models.DtoPlaylist{}, err
+		return dto2.Playlist{}, err
 	}
 
 	if err := tx.Commit(ctx); err != nil {
 		if txErr := tx.Rollback(ctx); txErr != nil {
-			return models.DtoPlaylist{}, txErr
+			return dto2.Playlist{}, txErr
 		}
-		return models.DtoPlaylist{}, err
+		return dto2.Playlist{}, err
 	}
 
-	return models.DtoPlaylist{
+	return dto2.Playlist{
 		Id:            id,
 		Title:         title,
 		Thumbnail:     "",
@@ -63,24 +63,24 @@ func (s *Playlist) Create(ctx context.Context, title string, playlistType querie
 	}, nil
 }
 
-func (s *Playlist) GetById(ctx context.Context, playlistId string, userId int64) (models.DtoPlaylist, error) {
+func (s *Playlist) GetById(ctx context.Context, playlistId string, userId int64) (dto2.Playlist, error) {
 	q := queries.New(s.pool)
 	playlist, err := q.GetPlaylistById(ctx, queries.GetPlaylistByIdParams{
 		PlaylistID: playlistId,
 		UserID:     userId,
 	})
 	if err != nil {
-		return models.DtoPlaylist{}, err
+		return dto2.Playlist{}, err
 	}
 
-	tracks := make([]models.DtoTrack, len(playlist.Tracks))
+	tracks := make([]dto2.Track, len(playlist.Tracks))
 	for i, entity := range playlist.Tracks {
 		dbTrack, err := q.GetTrackById(ctx, entity)
 		if err != nil {
-			return models.DtoPlaylist{}, err
+			return dto2.Playlist{}, err
 		}
 
-		tracks[i] = models.DtoTrack{
+		tracks[i] = dto2.Track{
 			Id:        dbTrack.ID,
 			Title:     dbTrack.Title,
 			Authors:   dbTrack.Authors,
@@ -94,7 +94,7 @@ func (s *Playlist) GetById(ctx context.Context, playlistId string, userId int64)
 	allowedCount := playlist.AllowedCount.Int32
 	time := playlist.Time
 
-	return models.DtoPlaylist{
+	return dto2.Playlist{
 		Id:           playlist.ID,
 		Title:        playlist.Title,
 		Thumbnail:    playlist.Thumbnail,
@@ -108,27 +108,27 @@ func (s *Playlist) GetById(ctx context.Context, playlistId string, userId int64)
 	}, nil
 }
 
-func (s *Playlist) GetAll(ctx context.Context, userId int64) ([]models.DtoPlaylist, error) {
+func (s *Playlist) GetAll(ctx context.Context, userId int64) ([]dto2.Playlist, error) {
 	q := queries.New(s.pool)
 	playlists, err := q.GetUserPlaylists(ctx, userId)
 	if err != nil {
 		return nil, err
 	}
 
-	result := make([]models.DtoPlaylist, len(playlists))
+	result := make([]dto2.Playlist, len(playlists))
 	for i, playlist := range playlists {
 		count := playlist.Count.Int32
 		allowedCount := playlist.AllowedCount.Int32
 		time := playlist.Time
 
-		result[i] = models.DtoPlaylist{
+		result[i] = dto2.Playlist{
 			Id:           playlist.ID,
 			Title:        playlist.Title,
 			Thumbnail:    playlist.Thumbnail,
 			Count:        int(count),
 			Length:       int(time),
 			AllowedCount: int(allowedCount),
-			Tracks:       make([]models.DtoTrack, 0),
+			Tracks:       make([]dto2.Track, 0),
 			AllowedIds:   make([]string, 0),
 			Role:         playlist.Role,
 			Type:         string(queries.PlaylistTypeUnknown),

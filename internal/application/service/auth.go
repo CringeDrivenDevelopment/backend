@@ -2,7 +2,7 @@ package service
 
 import (
 	"backend/internal/application"
-	"backend/internal/domain/models"
+	"backend/internal/infra/handlers/api/dto"
 	"errors"
 	"net/url"
 	"strconv"
@@ -92,7 +92,7 @@ func (s *Auth) ParseInitData(initDataRaw string) (int64, error) {
 		return 0, errors.New("telegram user empty")
 	}
 
-	user := models.TelegramData{}
+	user := dto.TelegramData{}
 	err = sonic.Unmarshal([]byte(initDataUser), &user)
 	if err != nil {
 		return 0, errors.New("failed to parse user data")

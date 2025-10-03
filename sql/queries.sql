@@ -73,5 +73,3 @@ WHERE playlist_id = $1 AND user_id = $2;
 -- name: GetRole :one
 SELECT playlist_id FROM playlist_permissions
 WHERE user_id = $1 AND role = $2;
-
--- ROLES CRUD END

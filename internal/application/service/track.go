@@ -2,8 +2,8 @@ package service
 
 import (
 	"backend/internal/application"
-	"backend/internal/domain/models"
 	"backend/internal/infra/database/queries"
+	"backend/internal/infra/handlers/api/dto"
 	"backend/internal/infra/youtube"
 	"context"
 	"errors"
@@ -23,7 +23,7 @@ func NewTrackService(app *application.App) *Track {
 	return &Track{pool: app.DB, ytApi: youtube.NewService()}
 }
 
-func (s *Track) Search(ctx context.Context, query string, userId int64) ([]models.DtoTrack, error) {
+func (s *Track) Search(ctx context.Context, query string, userId int64) ([]dto.Track, error) {
 	data, err := s.ytApi.Search(query, youtube.FILTER_SONGS)
 	if err != nil {
 		return nil, err
@@ -48,14 +48,14 @@ func (s *Track) Search(ctx context.Context, query string, userId int64) ([]model
 		return nil, errors.New("could not find music shelf")
 	}
 
-	tracks := make([]models.DtoTrack, len(results))
+	tracks := make([]dto.Track, len(results))
 	for i, result := range results {
 		track, err := youtube.ParseRaw(&result.Data)
 		if err != nil {
 			return nil, errors.New("could not parse music song")
 		}
 
-		tracks[i] = models.DtoTrack{
+		tracks[i] = dto.Track{
 			Id:          track.Id,
 			Title:       track.Title,
 			Authors:     track.Authors,
@@ -113,14 +113,14 @@ func (s *Track) Search(ctx context.Context, query string, userId int64) ([]model
 	return tracks, nil
 }
 
-func (s *Track) GetById(ctx context.Context, id string) (models.DtoTrack, error) {
+func (s *Track) GetById(ctx context.Context, id string) (dto.Track, error) {
 	q := queries.New(s.pool)
 	track, err := q.GetTrackById(ctx, id)
 	if err != nil {
-		return models.DtoTrack{}, err
+		return dto.Track{}, err
 	}
 
-	return models.DtoTrack{
+	return dto.Track{
 		Id:        track.ID,
 		Title:     track.Title,
 		Authors:   track.Authors,

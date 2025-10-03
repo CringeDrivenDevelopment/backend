@@ -2,6 +2,7 @@ package bot
 
 import (
 	"backend/internal/infra/database/queries"
+	"backend/internal/infra/handlers/bot/utils"
 	"errors"
 	"strconv"
 
@@ -11,7 +12,7 @@ import (
 )
 
 func (b *Bot) handleGroup(ctx *ext.Context, update *ext.Update) error {
-	data, err := HandleParticipant(update)
+	data, err := utils.HandleParticipant(update)
 	if err != nil {
 		b.logger.Error(err.Error())
 		return err
@@ -37,7 +38,7 @@ func (b *Bot) handleGroup(ctx *ext.Context, update *ext.Update) error {
 			}
 
 			// get basic chat info
-			chat, err := b.getChatInfo(ctx.Context, data.ChatID, data.ActorID)
+			chat, err := utils.GetChatInfo(b.client, ctx.Context, data.ChatID, data.ActorID)
 			if err != nil {
 				b.logger.Error(err.Error())
 				return err

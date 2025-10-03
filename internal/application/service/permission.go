@@ -2,7 +2,7 @@ package service
 
 import (
 	"backend/internal/application"
-	"backend/internal/domain/models"
+	"backend/internal/application/models"
 	"backend/internal/infra/database/queries"
 	"context"
 	"errors"

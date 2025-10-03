@@ -2,8 +2,8 @@ package handlers
 
 import (
 	"backend/internal/application"
-	"backend/internal/domain/models"
-	"backend/internal/domain/service"
+	"backend/internal/application/service"
+	"backend/internal/infra/handlers/api/dto"
 	"context"
 	"errors"
 	"time"
@@ -33,7 +33,7 @@ func NewAuth(app *application.App) *User {
 }
 
 // login - Получить токен для взаимодействия. Нуждается в InitDataRaw строке из Telegram Mini App. Действует 1 час
-func (h *User) login(ctx context.Context, input *models.AuthInputStruct) (*models.AuthOutputStruct, error) {
+func (h *User) login(ctx context.Context, input *dto.AuthInputStruct) (*dto.AuthOutputStruct, error) {
 	userDTO := input.Body
 
 	id, tgErr := h.tokenService.ParseInitData(userDTO.InitDataRaw)
@@ -67,9 +67,9 @@ func (h *User) login(ctx context.Context, input *models.AuthInputStruct) (*model
 		return nil, huma.Error500InternalServerError("internal server error")
 	}
 
-	tokenData := models.TokenDto{
+	tokenData := dto.Token{
 		Token: token,
 	}
 
-	return &models.AuthOutputStruct{Body: tokenData}, nil
+	return &dto.AuthOutputStruct{Body: tokenData}, nil
 }

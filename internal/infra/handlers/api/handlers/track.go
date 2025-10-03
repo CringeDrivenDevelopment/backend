@@ -2,9 +2,9 @@ package handlers
 
 import (
 	"backend/internal/application"
-	"backend/internal/domain/models"
-	"backend/internal/domain/service"
+	"backend/internal/application/service"
 	"backend/internal/infra/database/queries"
+	"backend/internal/infra/handlers/api/dto"
 	"backend/internal/infra/handlers/api/middlewares"
 	"context"
 	"errors"
@@ -33,7 +33,7 @@ func NewTrack(app *application.App) *Track {
 func (h *Track) search(ctx context.Context, input *struct {
 	Query string `query:"query"`
 }) (*struct {
-	Body []models.DtoTrack
+	Body []dto.Track
 }, error) {
 	val, ok := ctx.Value(middlewares.UserJwtKey).(int64)
 	if !ok {
@@ -56,7 +56,7 @@ func (h *Track) search(ctx context.Context, input *struct {
 		return nil, huma.Error500InternalServerError("internal server error")
 	}
 
-	return &struct{ Body []models.DtoTrack }{Body: search}, nil
+	return &struct{ Body []dto.Track }{Body: search}, nil
 }
 
 func (h *Track) submit(ctx context.Context, input *struct {
