@@ -12,7 +12,7 @@ require (
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/labstack/echo/v4 v4.13.4
 	github.com/oklog/ulid/v2 v2.1.1
-	github.com/pressly/goose/v3 v3.25.0
+	github.com/pressly/goose/v3 v3.26.0
 	github.com/telegram-mini-apps/init-data-golang v1.5.0
 	go.uber.org/zap v1.27.0
 	gopkg.in/telebot.v4 v4.0.0-beta.5
