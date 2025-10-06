@@ -5,7 +5,7 @@ services:
       - "127.0.0.1:5432:5432"
     env_file:
       - .env
-    image: postgres:16.2-alpine3.19
+    image: postgres:18.0-alpine3.22
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres -d db" ]
       interval: 5s
