@@ -22,7 +22,7 @@ type Auth struct {
 }
 
 // NewAuth - создать новый экземпляр сервиса авторизации
-func NewAuth(cfg infra.Config) *Auth {
+func NewAuth(cfg *infra.Config) *Auth {
 	return &Auth{
 		secret:   cfg.JwtSecret,
 		botToken: cfg.BotToken,

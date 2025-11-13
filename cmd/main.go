@@ -7,7 +7,6 @@ import (
 	"backend/internal/transport/api/middlewares"
 	"backend/pkg/youtube"
 
-	"github.com/labstack/echo/v4"
 	"go.uber.org/fx"
 )
 
@@ -18,23 +17,32 @@ func main() {
 
 	fx.New(
 		fx.Provide(
+			// REST API
+			infra.NewEcho,
+			infra.NewHuma,
+			middlewares.NewLogger,
+			middlewares.NewAuth,
+			handlers.NewAuth,
+			handlers.NewPlaylist,
+			handlers.NewTrack,
+
+			// services and infra
 			infra.NewLogger,
 			infra.NewConfig,
 			infra.NewPostgresConnection,
-			infra.NewEcho,
-			infra.NewHuma,
 			youtube.New,
 			service.NewAuth,
 			service.NewPermission,
 			service.NewPlaylist,
 			service.NewTrack,
 			service.NewUser,
-			middlewares.NewLogger,
-			middlewares.NewAuth,
-			handlers.NewAuth,
-			handlers.NewPlaylist,
-			handlers.NewTrack,
 		),
-		fx.Invoke(func(echo *echo.Echo) {}),
+		fx.Invoke(func(auth *handlers.Auth, track *handlers.Track, playlist *handlers.Playlist) {
+			// need echo and huma to start the api
+
+			// need each of controllers, to register them, maybe i'll use hooks
+
+			// no need to call infra, apis and services, they're deps, started automatically
+		}),
 	).Run()
 }

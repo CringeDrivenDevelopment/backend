@@ -12,7 +12,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func NewPostgresConnection(lc fx.Lifecycle, logger *zap.Logger, cfg Config) (*pgxpool.Pool, error) {
+func NewPostgresConnection(lc fx.Lifecycle, logger *zap.Logger, cfg *Config) (*pgxpool.Pool, error) {
 	ctxWithCancel, cancel := context.WithCancel(context.Background())
 
 	pool, err := pgxpool.New(ctxWithCancel, cfg.DbUrl)

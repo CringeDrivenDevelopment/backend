@@ -22,7 +22,7 @@ type Playlist struct {
 }
 
 // NewPlaylist - создать новый экземпляр обработчика
-func NewPlaylist(playlistService *service.Playlist, permissionService *service.Permission, logger *zap.Logger, api huma.API, authMiddleware middlewares.Auth) *Playlist {
+func NewPlaylist(playlistService *service.Playlist, permissionService *service.Permission, logger *zap.Logger, api huma.API, authMiddleware *middlewares.Auth) *Playlist {
 	result := &Playlist{
 		playlistService:   playlistService,
 		permissionService: permissionService,

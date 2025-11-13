@@ -21,7 +21,7 @@ type Track struct {
 	logger *zap.Logger
 }
 
-func NewTrack(playlistService *service.Playlist, trackService *service.Track, logger *zap.Logger, api huma.API, authMiddleware middlewares.Auth) *Track {
+func NewTrack(playlistService *service.Playlist, trackService *service.Track, logger *zap.Logger, api huma.API, authMiddleware *middlewares.Auth) *Track {
 	result := &Track{
 		playlistService: playlistService,
 		trackService:    trackService,

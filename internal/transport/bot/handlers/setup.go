@@ -25,7 +25,7 @@ type Bot struct {
 	client *gotgproto.Client
 }
 
-func New(cfg infra.Config, playlistService *service.Playlist, permissionService *service.Permission, logger *zap.Logger) (*Bot, error) {
+func New(cfg *infra.Config, playlistService *service.Playlist, permissionService *service.Permission, logger *zap.Logger) (*Bot, error) {
 	var dcList dcs.List
 
 	if cfg.Debug {
