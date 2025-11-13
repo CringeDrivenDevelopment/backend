@@ -57,7 +57,7 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
-          version: v2.1
+          version: v2.6.1
 
       - name: Extract metadata (tags, labels) for Docker
         id: meta
