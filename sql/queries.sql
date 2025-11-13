@@ -1,6 +1,6 @@
 -- name: CreatePlaylist :exec
-INSERT INTO playlists (id, title, thumbnail, tracks, allowed_tracks, type, external_id)
-VALUES ($1, $2, $3, $4, $5, $6, $7);
+INSERT INTO playlists (id, title, thumbnail, tracks, allowed_tracks, type, external_id, telegram_id)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8);
 
 -- name: EditPlaylist :exec
 UPDATE playlists
@@ -10,7 +10,8 @@ SET
     tracks = COALESCE($4, tracks),
     allowed_tracks = COALESCE($5, allowed_tracks),
     type = COALESCE($6, type),
-    external_id = COALESCE($7, external_id)
+    external_id = COALESCE($7, external_id),
+    telegram_id = COALESCE($8, external_id)
 WHERE id = $1;
 
 -- name: DeletePlaylist :exec
@@ -25,7 +26,7 @@ FROM playlists pl
          JOIN users u ON p.user_id = u.id  -- Join users table
 WHERE p.user_id = $1;
 
--- name: GetPlaylistById :one
+-- name: GetUserPlaylistById :one
 SELECT
     pl.*,
     p.role
@@ -33,6 +34,12 @@ FROM playlist_permissions p
          JOIN playlists pl ON p.playlist_id = pl.id
          JOIN users u ON p.user_id = u.id  -- Join users table
 WHERE p.playlist_id = $1 AND  p.user_id = $2;
+
+-- name: GetGroupPlaylist :one
+SELECT
+    *
+FROM playlists
+WHERE telegram_id = $1;
 
 -- name: GetTrackPlaylists :many
 -- param: TrackId text

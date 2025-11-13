@@ -1,8 +1,8 @@
 package app
 
 import (
-	"backend/internal/infra/database"
-	"backend/pkg/config"
+	"backend/internal/config"
+	"backend/internal/db"
 	"context"
 	"io"
 
@@ -72,7 +72,7 @@ func New(logger *zap.Logger) (*App, error) {
 	router.HidePort = true
 	api := humaecho.New(router, apiCfg)
 
-	conn, err := database.NewConnection(context.Background(), cfg.DbUrl)
+	conn, err := db.NewConnection(context.Background(), cfg.DbUrl)
 	if err != nil {
 		return nil, err
 	}

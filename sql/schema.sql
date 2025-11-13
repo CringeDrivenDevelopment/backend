@@ -1,12 +1,13 @@
-CREATE TYPE playlist_type AS ENUM('spotify', 'youtube', 'yandex', 'deezer', 'soundcloud', 'unknown');
-CREATE TYPE playlist_role AS ENUM('viewer', 'moderator', 'owner', 'group');
+CREATE TYPE playlist_type AS ENUM('spotify', 'youtube', 'yandex');
+CREATE TYPE playlist_role AS ENUM('viewer', 'moderator', 'owner');
 
 CREATE TABLE IF NOT EXISTS playlists (
     id TEXT NOT NULL PRIMARY KEY UNIQUE,
     title TEXT NOT NULL,
     thumbnail TEXT NOT NULL,
-    type playlist_type DEFAULT 'unknown',
-    external_id TEXT NULL,
+    type playlist_type NOT NULL,
+    external_id TEXT NOT NULL,
+    telegram_id BIGINT NOT NULL,
     tracks TEXT[] DEFAULT '{}',
     allowed_tracks TEXT[] DEFAULT '{}',
     count INTEGER GENERATED ALWAYS AS (COALESCE(array_length(tracks, 1), 0)) STORED,

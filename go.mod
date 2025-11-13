@@ -1,8 +1,9 @@
 module backend
 
-go 1.24.2
+go 1.25.4
 
 require (
+	github.com/andybalholm/brotli v1.2.0
 	github.com/bytedance/sonic v1.14.1
 	github.com/celestix/gotgproto v1.0.0-beta21
 	github.com/danielgtaylor/huma/v2 v2.34.1
@@ -10,6 +11,7 @@ require (
 	github.com/gotd/td v0.131.0
 	github.com/ilyakaznacheev/cleanenv v1.5.0
 	github.com/jackc/pgx/v5 v5.7.6
+	github.com/klauspost/compress v1.18.0
 	github.com/labstack/echo/v4 v4.13.4
 	github.com/oklog/ulid/v2 v2.1.1
 	github.com/pressly/goose/v3 v3.26.0
@@ -46,7 +48,6 @@ require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/joho/godotenv v1.5.1 // indirect
-	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/labstack/gommon v0.4.2 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
