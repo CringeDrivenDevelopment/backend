@@ -1,10 +1,16 @@
-package errorz
+package utils
 
 import (
 	"errors"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5"
+)
+
+var (
+	ErrNotEnoughPerms  = errors.New("not enough permissions")
+	ErrInvalidToken    = errors.New("invalid token")
+	ErrInvalidInitData = errors.New("invalid init data")
 )
 
 func Convert(functionError error) error {

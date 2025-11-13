@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"backend/internal/db/queries"
+	"backend/internal/infra/queries"
 	"backend/internal/transport/bot/models"
 
 	"github.com/gotd/td/tg"

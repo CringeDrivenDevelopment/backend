@@ -1,11 +1,10 @@
 package service
 
 import (
-	"backend/internal/app"
-	"backend/internal/db"
-	"backend/internal/db/queries"
-	"backend/internal/errorz"
+	"backend/internal/infra/queries"
+	"backend/internal/interfaces"
 	"backend/internal/transport/api/dto"
+	"backend/pkg/utils"
 	"backend/pkg/youtube"
 	"context"
 	"errors"
@@ -15,19 +14,15 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type SearchAPI interface {
-	Search(ctx context.Context, query string) ([]dto.Track, error)
-}
-
 type Track struct {
 	pool *pgxpool.Pool
 
-	youtube SearchAPI
+	youtube interfaces.SearchAPI
 	// spotify SearchAPI
 }
 
-func NewTrackService(app *app.App) *Track {
-	return &Track{pool: app.DB, youtube: youtube.NewService()}
+func NewTrack(pool *pgxpool.Pool, ytApi *youtube.API) *Track {
+	return &Track{pool: pool, youtube: ytApi}
 }
 
 /*
@@ -45,7 +40,7 @@ func (s *Track) Search(ctx context.Context, query string) ([]dto.Track, error) {
 
 	rq := queries.New(s.pool)
 
-	if err := db.ExecInTx(ctx, s.pool, func(tq *queries.Queries) error {
+	if err := utils.ExecInTx(ctx, s.pool, func(tq *queries.Queries) error {
 		for _, track := range tracks {
 			_, err := rq.GetTrackById(ctx, track.Id)
 			if errors.Is(err, pgx.ErrNoRows) {
@@ -76,8 +71,8 @@ func (s *Track) Search(ctx context.Context, query string) ([]dto.Track, error) {
 }
 
 func (s *Track) GetById(ctx context.Context, id string) (dto.Track, error) {
-	q := queries.New(s.pool)
-	track, err := q.GetTrackById(ctx, id)
+	rq := queries.New(s.pool)
+	track, err := rq.GetTrackById(ctx, id)
 	if err != nil {
 		return dto.Track{}, err
 	}
@@ -103,7 +98,7 @@ func (s *Track) Approve(ctx context.Context, playlistId, trackId string, userId 
 	}
 
 	if playlist.Role != queries.PlaylistRoleOwner && playlist.Role != queries.PlaylistRoleModerator {
-		return errorz.ErrNotEnoughPerms
+		return utils.ErrNotEnoughPerms
 	}
 
 	if slices.Contains(playlist.AllowedTracks, trackId) {
@@ -114,7 +109,7 @@ func (s *Track) Approve(ctx context.Context, playlistId, trackId string, userId 
 		return pgx.ErrNoRows
 	}
 
-	if err := db.ExecInTx(ctx, s.pool, func(tq *queries.Queries) error {
+	if err := utils.ExecInTx(ctx, s.pool, func(tq *queries.Queries) error {
 		return tq.EditPlaylist(ctx, queries.EditPlaylistParams{
 			ID:            playlistId,
 			AllowedTracks: append(playlist.AllowedTracks, trackId),
@@ -137,7 +132,7 @@ func (s *Track) Decline(ctx context.Context, playlistId, trackId string, userId 
 	}
 
 	if playlist.Role != queries.PlaylistRoleOwner && playlist.Role != queries.PlaylistRoleModerator {
-		return errorz.ErrNotEnoughPerms
+		return utils.ErrNotEnoughPerms
 	}
 
 	if slices.Contains(playlist.AllowedTracks, trackId) || !slices.Contains(playlist.Tracks, trackId) {
@@ -151,7 +146,7 @@ func (s *Track) Decline(ctx context.Context, playlistId, trackId string, userId 
 		}
 	}
 
-	if err := db.ExecInTx(ctx, s.pool, func(tq *queries.Queries) error {
+	if err := utils.ExecInTx(ctx, s.pool, func(tq *queries.Queries) error {
 		return tq.EditPlaylist(ctx, queries.EditPlaylistParams{
 			ID:            playlistId,
 			AllowedTracks: playlist.AllowedTracks,
@@ -188,7 +183,7 @@ func (s *Track) Submit(ctx context.Context, playlistId, trackId string, userId i
 		return nil
 	}
 
-	if err := db.ExecInTx(ctx, s.pool, func(tq *queries.Queries) error {
+	if err := utils.ExecInTx(ctx, s.pool, func(tq *queries.Queries) error {
 		return tq.EditPlaylist(ctx, queries.EditPlaylistParams{
 			ID:            playlistId,
 			Tracks:        tracks,
@@ -212,7 +207,7 @@ func (s *Track) Unapprove(ctx context.Context, playlistId, trackId string, userI
 	}
 
 	if playlist.Role != queries.PlaylistRoleOwner && playlist.Role != queries.PlaylistRoleModerator {
-		return errorz.ErrNotEnoughPerms
+		return utils.ErrNotEnoughPerms
 	}
 
 	if !slices.Contains(playlist.AllowedTracks, trackId) || !slices.Contains(playlist.Tracks, trackId) {
@@ -226,7 +221,7 @@ func (s *Track) Unapprove(ctx context.Context, playlistId, trackId string, userI
 		}
 	}
 
-	if err := db.ExecInTx(ctx, s.pool, func(tq *queries.Queries) error {
+	if err := utils.ExecInTx(ctx, s.pool, func(tq *queries.Queries) error {
 		return tq.EditPlaylist(ctx, queries.EditPlaylistParams{
 			ID:            playlistId,
 			AllowedTracks: playlist.AllowedTracks,

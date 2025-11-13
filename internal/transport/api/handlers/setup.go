@@ -6,8 +6,8 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 )
 
-// Setup - добавить маршрут до эндпоинта
-func (h *User) Setup(router huma.API) {
+// setup - добавить маршрут до эндпоинта
+func (h *Auth) setup(router huma.API) {
 	huma.Register(router, huma.Operation{
 		OperationID: "auth",
 		Path:        "/api/auth",
@@ -25,8 +25,8 @@ func (h *User) Setup(router huma.API) {
 	}, h.login)
 }
 
-// Setup - добавить маршрут до эндпоинтов
-func (h *Playlist) Setup(router huma.API, auth func(ctx huma.Context, next func(ctx huma.Context))) {
+// setup - добавить маршрут до эндпоинтов
+func (h *Playlist) setup(router huma.API, auth func(ctx huma.Context, next func(ctx huma.Context))) {
 	huma.Register(router, huma.Operation{
 		OperationID: "playlist-by-id",
 		Path:        "/api/playlists/{id}",
@@ -72,7 +72,7 @@ func (h *Playlist) Setup(router huma.API, auth func(ctx huma.Context, next func(
 	}, h.getAll)
 }
 
-func (h *Track) Setup(router huma.API, auth func(ctx huma.Context, next func(ctx huma.Context))) {
+func (h *Track) setup(router huma.API, auth func(ctx huma.Context, next func(ctx huma.Context))) {
 	huma.Register(router, huma.Operation{
 		OperationID: "track-search",
 		Path:        "/api/search",

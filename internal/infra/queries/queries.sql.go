@@ -48,8 +48,8 @@ VALUES ($1, $2, $3)
 
 type CreateRoleParams struct {
 	PlaylistID string
-	UserID     int64
-	Role       PlaylistRole
+	UserID int64
+	Role   PlaylistRole
 }
 
 func (q *Queries) CreateRole(ctx context.Context, arg CreateRoleParams) error {
@@ -162,8 +162,8 @@ WHERE playlist_id = $1 AND user_id = $2
 
 type EditRoleParams struct {
 	PlaylistID string
-	UserID     int64
-	Role       PlaylistRole
+	UserID int64
+	Role   PlaylistRole
 }
 
 func (q *Queries) EditRole(ctx context.Context, arg EditRoleParams) error {
@@ -296,16 +296,16 @@ type GetUserPlaylistByIdParams struct {
 type GetUserPlaylistByIdRow struct {
 	ID            string
 	Title         string
-	Thumbnail     string
-	Type          PlaylistType
-	ExternalID    string
+	Thumbnail  string
+	Type       PlaylistType
+	ExternalID string
 	TelegramID    int64
 	Tracks        []string
 	AllowedTracks []string
 	Count         pgtype.Int4
 	AllowedCount  pgtype.Int4
-	Time          int32
-	Role          PlaylistRole
+	Time       int32
+	Role       PlaylistRole
 }
 
 func (q *Queries) GetUserPlaylistById(ctx context.Context, arg GetUserPlaylistByIdParams) (GetUserPlaylistByIdRow, error) {
@@ -341,16 +341,16 @@ WHERE p.user_id = $1
 type GetUserPlaylistsRow struct {
 	ID            string
 	Title         string
-	Thumbnail     string
-	Type          PlaylistType
-	ExternalID    string
+	Thumbnail  string
+	Type       PlaylistType
+	ExternalID string
 	TelegramID    int64
 	Tracks        []string
 	AllowedTracks []string
 	Count         pgtype.Int4
 	AllowedCount  pgtype.Int4
-	Time          int32
-	Role          PlaylistRole
+	Time       int32
+	Role       PlaylistRole
 }
 
 func (q *Queries) GetUserPlaylists(ctx context.Context, userID int64) ([]GetUserPlaylistsRow, error) {

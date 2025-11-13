@@ -1,9 +1,9 @@
 package service
 
 import (
-	"backend/internal/app"
-	"backend/internal/errorz"
+	"backend/internal/infra"
 	"backend/internal/transport/api/dto"
+	"backend/pkg/utils"
 	"net/url"
 	"strconv"
 	"strings"
@@ -21,16 +21,20 @@ type Auth struct {
 	expires time.Duration
 }
 
-// NewAuthService - создать новый экземпляр сервиса авторизации
-func NewAuthService(app *app.App, expires time.Duration) *Auth {
-	return &Auth{secret: app.Settings.JwtSecret, botToken: app.Settings.BotToken, expires: expires}
+// NewAuth - создать новый экземпляр сервиса авторизации
+func NewAuth(cfg infra.Config) *Auth {
+	return &Auth{
+		secret:   cfg.JwtSecret,
+		botToken: cfg.BotToken,
+		expires:  time.Hour,
+	}
 }
 
 // VerifyToken - проверить токен на подлинность
 func (s *Auth) VerifyToken(authHeader string) (int64, error) {
 	tokenStr := strings.TrimSpace(strings.TrimPrefix(authHeader, "Bearer "))
 	if tokenStr == "" {
-		return 0, errorz.ErrInvalidToken
+		return 0, utils.ErrInvalidToken
 	}
 
 	token, err := jwt.Parse(tokenStr, func(_ *jwt.Token) (interface{}, error) {
@@ -42,22 +46,22 @@ func (s *Auth) VerifyToken(authHeader string) (int64, error) {
 	}
 
 	if !token.Valid || token.Method != jwt.SigningMethodHS256 {
-		return 0, errorz.ErrInvalidToken
+		return 0, utils.ErrInvalidToken
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return 0, errorz.ErrInvalidToken
+		return 0, utils.ErrInvalidToken
 	}
 
 	userIDstr, ok := claims["sub"].(string)
 	if !ok {
-		return 0, errorz.ErrInvalidToken
+		return 0, utils.ErrInvalidToken
 	}
 
 	userID, err := strconv.ParseInt(userIDstr, 10, 64)
 	if err != nil {
-		return 0, errorz.ErrInvalidToken
+		return 0, utils.ErrInvalidToken
 	}
 
 	return userID, nil
@@ -78,24 +82,24 @@ func (s *Auth) GenerateToken(userID int64) (string, error) {
 // ParseInitData - извлечь Telegram ID из Init Data Raw
 func (s *Auth) ParseInitData(initDataRaw string) (int64, error) {
 	if err := initdata.Validate(initDataRaw, s.botToken, s.expires); err != nil {
-		return 0, errorz.ErrInvalidInitData
+		return 0, utils.ErrInvalidInitData
 	}
 
 	initDataValues, err := url.ParseQuery(initDataRaw)
 	if err != nil {
-		return 0, errorz.ErrInvalidInitData
+		return 0, utils.ErrInvalidInitData
 	}
 
 	initDataUser := initDataValues.Get("user")
 
 	if initDataUser == "" {
-		return 0, errorz.ErrInvalidInitData
+		return 0, utils.ErrInvalidInitData
 	}
 
 	user := dto.TelegramData{}
 	err = sonic.Unmarshal([]byte(initDataUser), &user)
 	if err != nil {
-		return 0, errorz.ErrInvalidInitData
+		return 0, utils.ErrInvalidInitData
 	}
 
 	return user.ID, nil

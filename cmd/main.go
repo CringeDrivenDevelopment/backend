@@ -1,72 +1,40 @@
 package main
 
 import (
-	"backend/internal/app"
-	"backend/internal/transport/api"
-	"os"
-	"os/signal"
-	"syscall"
+	"backend/internal/infra"
+	"backend/internal/service"
+	"backend/internal/transport/api/handlers"
+	"backend/internal/transport/api/middlewares"
+	"backend/pkg/youtube"
 
-	"go.uber.org/zap"
+	"github.com/labstack/echo/v4"
+	"go.uber.org/fx"
 )
 
 func main() {
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	// TODO: log db requests
+	// TODO: add otel
+	// TODO: add image proxy, DL
 
-	logger, err := zap.NewProduction()
-	if err != nil {
-		panic(err)
-	}
-
-	logger.Info("logger initialized")
-
-	mainApp, err := app.New(logger)
-	if err != nil {
-		logger.Panic(err.Error())
-		return
-	}
-
-	api.Setup(mainApp)
-
-	logger.Info("endpoints mapped")
-
-	/*
-		botApp, err := handlers.New(mainApp)
-			if err != nil {
-				logger.Panic(err.Error())
-				return
-			}
-
-			botApp.Setup()
-
-
-		go func() {
-			err := botApp.Start()
-			if err != nil {
-				logger.Info(err.Error())
-			}
-		}()
-	*/
-
-	logger.Info("app initialized")
-
-	go func() {
-		err := mainApp.Start()
-		if err != nil {
-			logger.Info(err.Error())
-		}
-
-	}()
-
-	<-sigChan
-
-	// botApp.Stop()
-	err = mainApp.Stop()
-	if err != nil {
-		logger.Panic(err.Error())
-	}
-	mainApp.DB.Close()
-
-	logger.Info("server stopped")
+	fx.New(
+		fx.Provide(
+			infra.NewLogger,
+			infra.NewConfig,
+			infra.NewPostgresConnection,
+			infra.NewEcho,
+			infra.NewHuma,
+			youtube.New,
+			service.NewAuth,
+			service.NewPermission,
+			service.NewPlaylist,
+			service.NewTrack,
+			service.NewUser,
+			middlewares.NewLogger,
+			middlewares.NewAuth,
+			handlers.NewAuth,
+			handlers.NewPlaylist,
+			handlers.NewTrack,
+		),
+		fx.Invoke(func(echo *echo.Echo) {}),
+	).Run()
 }

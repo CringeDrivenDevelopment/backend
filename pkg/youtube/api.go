@@ -16,15 +16,15 @@ import (
 	"github.com/klauspost/compress/zstd"
 )
 
-type Service struct {
+type API struct {
 	client *http.Client
 }
 
-func NewService() *Service {
-	return &Service{client: &http.Client{}}
+func New() *API {
+	return &API{client: &http.Client{}}
 }
 
-func (s *Service) Search(ctx context.Context, query string) ([]dto.Track, error) {
+func (s *API) Search(ctx context.Context, query string) ([]dto.Track, error) {
 	body := &SearchRequest{
 		Query:  query,
 		Params: FILTER_SONGS,
@@ -91,7 +91,7 @@ func (s *Service) Search(ctx context.Context, query string) ([]dto.Track, error)
 	}(resp.Body)
 
 	encoding := resp.Header.Get("Content-Encoding")
-	var reader io.Reader = resp.Body
+	var reader io.Reader
 
 	switch encoding {
 	case "gzip":

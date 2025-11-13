@@ -1,7 +1,7 @@
 package dto
 
 import (
-	"backend/internal/db/queries"
+	"backend/internal/infra/queries"
 )
 
 type Playlist struct {

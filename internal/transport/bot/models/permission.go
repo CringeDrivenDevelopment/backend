@@ -1,7 +1,7 @@
 package models
 
 import (
-	"backend/internal/db/queries"
+	"backend/internal/infra/queries"
 
 	"github.com/gotd/td/tg"
 )

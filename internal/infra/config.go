@@ -1,4 +1,4 @@
-package config
+package infra
 
 import (
 	"errors"
@@ -7,11 +7,11 @@ import (
 	"github.com/ilyakaznacheev/cleanenv"
 )
 
-type Settings struct {
+type Config struct {
 	// DbUrl - Postgres Database connection string
 	// Example - "postgres://username:password@localhost:5432/database_name"
 	DbUrl string
-	
+
 	DbHost     string `env:"POSTGRES_HOST" env-default:"localhost"`
 	DbPort     string `env:"POSTGRES_PORT" env-default:"5432"`
 	DbPassword string `env:"POSTGRES_PASSWORD" env-default:"password"`
@@ -26,8 +26,8 @@ type Settings struct {
 	Debug bool `env:"DEBUG" env-default:"false"`
 }
 
-func New() (*Settings, error) {
-	var cfg Settings
+func NewConfig() (*Config, error) {
+	var cfg Config
 	if err := cleanenv.ReadEnv(&cfg); err != nil {
 		return nil, err
 	}

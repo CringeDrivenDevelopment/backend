@@ -1,8 +1,9 @@
 package handlers
 
 import (
-	"backend/internal/app"
-	service2 "backend/internal/service"
+	"backend/internal/infra"
+	"backend/internal/interfaces"
+	"backend/internal/service"
 
 	"github.com/celestix/gotgproto"
 	"github.com/celestix/gotgproto/dispatcher/handlers"
@@ -15,8 +16,8 @@ import (
 )
 
 type Bot struct {
-	playlistService   *service2.Playlist
-	permissionService *service2.Permission
+	playlistService   interfaces.PlaylistService
+	permissionService interfaces.PermissionService
 	logger            *zap.Logger
 	// dl                *downloader.Downloader
 	// s3                *service.S3Service
@@ -24,19 +25,19 @@ type Bot struct {
 	client *gotgproto.Client
 }
 
-func New(app *app.App) (*Bot, error) {
+func New(cfg infra.Config, playlistService *service.Playlist, permissionService *service.Permission, logger *zap.Logger) (*Bot, error) {
 	var dcList dcs.List
 
-	if app.Settings.Debug {
+	if cfg.Debug {
 		dcList = dcs.Test()
 	} else {
 		dcList = dcs.Prod()
 	}
 
 	client, err := gotgproto.NewClient(
-		app.Settings.AppId,
-		app.Settings.AppHash,
-		gotgproto.ClientTypeBot(app.Settings.BotToken),
+		cfg.AppId,
+		cfg.AppHash,
+		gotgproto.ClientTypeBot(cfg.BotToken),
 		&gotgproto.ClientOpts{
 			DCList:           dcList,
 			DisableCopyright: true,
@@ -49,7 +50,7 @@ func New(app *app.App) (*Bot, error) {
 	}
 
 	self := client.Self
-	app.Logger.Info("bot logged in as https://t.me/" + self.Username)
+	logger.Info("bot logged in as https://t.me/" + self.Username)
 
 	/*
 		s3Service, err := service.NewS3Service(app)
@@ -59,12 +60,12 @@ func New(app *app.App) (*Bot, error) {
 	*/
 
 	return &Bot{
-		playlistService:   service2.NewPlaylistService(app),
-		permissionService: service2.NewPermissionService(app),
+		playlistService:   playlistService,
+		permissionService: permissionService,
 		// 	dl:                downloader.NewDownloader(),
 		//	s3:                s3Service,
 		client: client,
-		logger: app.Logger,
+		logger: logger,
 	}, nil
 }
 

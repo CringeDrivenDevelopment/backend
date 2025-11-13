@@ -100,9 +100,9 @@ func (ns NullPlaylistType) Value() (driver.Value, error) {
 type Playlist struct {
 	ID            string
 	Title         string
-	Thumbnail     string
-	Type          PlaylistType
-	ExternalID    string
+	Thumbnail  string
+	Type       PlaylistType
+	ExternalID string
 	TelegramID    int64
 	Tracks        []string
 	AllowedTracks []string
@@ -113,8 +113,8 @@ type Playlist struct {
 
 type PlaylistPermission struct {
 	PlaylistID string
-	UserID     int64
-	Role       PlaylistRole
+	UserID int64
+	Role   PlaylistRole
 }
 
 type Track struct {

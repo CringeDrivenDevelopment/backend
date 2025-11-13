@@ -1,65 +1,66 @@
 package handlers
 
 import (
-	"backend/internal/app"
-	"backend/internal/errorz"
+	"backend/internal/interfaces"
 	"backend/internal/service"
 	"backend/internal/transport/api/dto"
+	"backend/pkg/utils"
 	"context"
 	"errors"
-	"time"
 
+	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5"
 	"go.uber.org/zap"
 )
 
-type User struct {
-	userService  *service.User
-	tokenService *service.Auth
+type Auth struct {
+	userService interfaces.UserService
+	authService interfaces.AuthService
 
 	logger *zap.Logger
 }
 
 // NewAuth - создать новый экземпляр обработчика
-func NewAuth(app *app.App) *User {
-	userService := service.NewUserService(app)
-	tokenService := service.NewAuthService(app, time.Hour)
-
-	return &User{
-		userService:  userService,
-		tokenService: tokenService,
-		logger:       app.Logger,
+func NewAuth(userService *service.User, authService *service.Auth, logger *zap.Logger, api huma.API) *Auth {
+	result := &Auth{
+		userService: userService,
+		authService: authService,
+		logger:      logger,
 	}
+
+	result.setup(api)
+
+	return result
 }
 
 // login - Получить токен для взаимодействия. Нуждается в Raw строке из Telegram Mini App. Действует 1 час
-func (h *User) login(ctx context.Context, input *dto.AuthInputStruct) (*dto.AuthOutputStruct, error) {
-	id, err := h.tokenService.ParseInitData(input.Body.Raw)
+func (h *Auth) login(ctx context.Context, input *dto.AuthInputStruct) (*dto.AuthOutputStruct, error) {
+	id, err := h.authService.ParseInitData(input.Body.Raw)
 	if err != nil {
-		h.logger.Warn("auth data error", zap.Error(err))
+		h.logger.Warn("login error", zap.Error(err))
 
-		return nil, errorz.Convert(err)
+		return nil, utils.Convert(err)
 	}
 
 	if err := h.userService.GetByID(ctx, id); err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) {
-			h.logger.Error("error fetching user", zap.Error(err))
+			h.logger.Error("login error", zap.Error(err))
 
-			return nil, errorz.Convert(err)
+			return nil, utils.Convert(err)
 		}
 
 		if err := h.userService.Create(ctx, id); err != nil {
-			h.logger.Error("error creating user", zap.Error(err))
+			h.logger.Error("login error", zap.Error(err))
 
-			return nil, errorz.Convert(err)
+			return nil, utils.Convert(err)
 		}
 	}
 
-	token, err := h.tokenService.GenerateToken(id)
+	token, err := h.authService.GenerateToken(id)
 	if err != nil {
-		h.logger.Error("failed to generate token", zap.Error(err))
+		h.logger.Error("login error", zap.Error(err))
 
-		return nil, errorz.Convert(err)
+		return nil, utils.Convert(err)
 	}
 
 	tokenData := dto.Token{

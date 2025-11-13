@@ -1,10 +1,9 @@
 package service
 
 import (
-	"backend/internal/app"
-	"backend/internal/db"
-	"backend/internal/db/queries"
+	"backend/internal/infra/queries"
 	"backend/internal/transport/api/dto"
+	"backend/pkg/utils"
 	"context"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -15,14 +14,14 @@ type Playlist struct {
 	pool *pgxpool.Pool
 }
 
-func NewPlaylistService(app *app.App) *Playlist {
-	return &Playlist{pool: app.DB}
+func NewPlaylist(pool *pgxpool.Pool) *Playlist {
+	return &Playlist{pool: pool}
 }
 
 func (s *Playlist) Create(ctx context.Context, title string, playlistType queries.PlaylistType, telegramId int64) (dto.Playlist, error) {
 	id := ulid.Make().String()
 
-	err := db.ExecInTx(ctx, s.pool, func(tq *queries.Queries) error {
+	err := utils.ExecInTx(ctx, s.pool, func(tq *queries.Queries) error {
 		return tq.CreatePlaylist(ctx, queries.CreatePlaylistParams{
 			ID:            id,
 			Title:         title,
@@ -46,15 +45,15 @@ func (s *Playlist) Create(ctx context.Context, title string, playlistType querie
 }
 
 func (s *Playlist) GetByGroup(ctx context.Context, telegramId int64) (dto.Playlist, error) {
-	q := queries.New(s.pool)
-	playlist, err := q.GetGroupPlaylist(ctx, telegramId)
+	rq := queries.New(s.pool)
+	playlist, err := rq.GetGroupPlaylist(ctx, telegramId)
 	if err != nil {
 		return dto.Playlist{}, err
 	}
 
 	tracks := make([]dto.Track, len(playlist.Tracks))
 	for i, entity := range playlist.Tracks {
-		dbTrack, err := q.GetTrackById(ctx, entity)
+		dbTrack, err := rq.GetTrackById(ctx, entity)
 		if err != nil {
 			return dto.Playlist{}, err
 		}
@@ -88,8 +87,8 @@ func (s *Playlist) GetByGroup(ctx context.Context, telegramId int64) (dto.Playli
 }
 
 func (s *Playlist) GetById(ctx context.Context, playlistId string, userId int64) (dto.Playlist, error) {
-	q := queries.New(s.pool)
-	playlist, err := q.GetUserPlaylistById(ctx, queries.GetUserPlaylistByIdParams{
+	rq := queries.New(s.pool)
+	playlist, err := rq.GetUserPlaylistById(ctx, queries.GetUserPlaylistByIdParams{
 		PlaylistID: playlistId,
 		UserID:     userId,
 	})
@@ -99,7 +98,7 @@ func (s *Playlist) GetById(ctx context.Context, playlistId string, userId int64)
 
 	tracks := make([]dto.Track, len(playlist.Tracks))
 	for i, entity := range playlist.Tracks {
-		dbTrack, err := q.GetTrackById(ctx, entity)
+		dbTrack, err := rq.GetTrackById(ctx, entity)
 		if err != nil {
 			return dto.Playlist{}, err
 		}
@@ -133,8 +132,8 @@ func (s *Playlist) GetById(ctx context.Context, playlistId string, userId int64)
 }
 
 func (s *Playlist) GetAll(ctx context.Context, userId int64) ([]dto.Playlist, error) {
-	q := queries.New(s.pool)
-	playlists, err := q.GetUserPlaylists(ctx, userId)
+	rq := queries.New(s.pool)
+	playlists, err := rq.GetUserPlaylists(ctx, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -174,7 +173,7 @@ func (s *Playlist) Rename(ctx context.Context, playlistId, title string, userId 
 
 	playlist.Title = title
 
-	return db.ExecInTx(ctx, s.pool, func(tq *queries.Queries) error {
+	return utils.ExecInTx(ctx, s.pool, func(tq *queries.Queries) error {
 		return tq.EditPlaylist(ctx, queries.EditPlaylistParams{
 			ID:    playlist.ID,
 			Title: playlist.Title,
@@ -194,7 +193,7 @@ func (s *Playlist) UpdatePhoto(ctx context.Context, playlistId, thumbnail string
 
 	playlist.Thumbnail = thumbnail
 
-	return db.ExecInTx(ctx, s.pool, func(tq *queries.Queries) error {
+	return utils.ExecInTx(ctx, s.pool, func(tq *queries.Queries) error {
 		return tq.EditPlaylist(ctx, queries.EditPlaylistParams{
 			ID:        playlist.ID,
 			Thumbnail: playlist.Thumbnail,
@@ -203,7 +202,7 @@ func (s *Playlist) UpdatePhoto(ctx context.Context, playlistId, thumbnail string
 }
 
 func (s *Playlist) Delete(ctx context.Context, playlistId string) error {
-	return db.ExecInTx(ctx, s.pool, func(tq *queries.Queries) error {
+	return utils.ExecInTx(ctx, s.pool, func(tq *queries.Queries) error {
 		return tq.DeletePlaylist(ctx, playlistId)
 	})
 }

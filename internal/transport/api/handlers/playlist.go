@@ -1,34 +1,37 @@
 package handlers
 
 import (
-	"backend/internal/app"
-	"backend/internal/errorz"
+	"backend/internal/interfaces"
 	"backend/internal/service"
 	"backend/internal/transport/api/dto"
 	"backend/internal/transport/api/middlewares"
+	"backend/pkg/utils"
 	"context"
 	"errors"
 	"fmt"
 
+	"github.com/danielgtaylor/huma/v2"
 	"go.uber.org/zap"
 )
 
 type Playlist struct {
-	playlistService     *service.Playlist
-	permissionService   *service.Permission
-	notificationService *service.TgNotification
+	playlistService   interfaces.PlaylistService
+	permissionService interfaces.PermissionService
 
 	logger *zap.Logger
 }
 
 // NewPlaylist - создать новый экземпляр обработчика
-func NewPlaylist(app *app.App) *Playlist {
-	return &Playlist{
-		playlistService:     service.NewPlaylistService(app),
-		permissionService:   service.NewPermissionService(app),
-		notificationService: service.NewNotificationService(app),
-		logger:              app.Logger,
+func NewPlaylist(playlistService *service.Playlist, permissionService *service.Permission, logger *zap.Logger, api huma.API, authMiddleware middlewares.Auth) *Playlist {
+	result := &Playlist{
+		playlistService:   playlistService,
+		permissionService: permissionService,
+		logger:            logger,
 	}
+
+	result.setup(api, authMiddleware.IsAuthenticated)
+
+	return result
 }
 
 // getById - получить плейлист по ID
@@ -39,7 +42,7 @@ func (h *Playlist) getById(ctx context.Context, input *struct {
 	if !ok {
 		h.logger.Error("user not found in context")
 
-		return nil, errorz.Convert(errors.New("token not found in context"))
+		return nil, utils.Convert(errors.New("token not found in context"))
 	}
 
 	h.logger.Info(fmt.Sprintf("playlistById: user_id - %d, playlist_id - %s", val, input.Id))
@@ -48,7 +51,7 @@ func (h *Playlist) getById(ctx context.Context, input *struct {
 	if err != nil {
 		h.logger.Error(fmt.Sprintf("playlistById error: user_id - %d, playlist_id - %s", val, input.Id), zap.Error(err))
 
-		return nil, errorz.Convert(err)
+		return nil, utils.Convert(err)
 	}
 
 	return &dto.PlaylistByIdResponse{Body: resp}, nil
@@ -60,7 +63,7 @@ func (h *Playlist) getAll(ctx context.Context, _ *struct{}) (*dto.PlaylistsRespo
 	if !ok {
 		h.logger.Error("user not found in context")
 
-		return nil, errorz.Convert(errors.New("token not found in context"))
+		return nil, utils.Convert(errors.New("token not found in context"))
 	}
 
 	h.logger.Info(fmt.Sprintf("playlists: user_id - %d", val))
@@ -69,7 +72,7 @@ func (h *Playlist) getAll(ctx context.Context, _ *struct{}) (*dto.PlaylistsRespo
 	if err != nil {
 		h.logger.Error(fmt.Sprintf("playlists error: user_id - %d", val), zap.Error(err))
 
-		return nil, errorz.Convert(err)
+		return nil, utils.Convert(err)
 	}
 
 	return &dto.PlaylistsResponse{Body: resp}, nil

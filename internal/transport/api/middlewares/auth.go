@@ -1,17 +1,15 @@
 package middlewares
 
 import (
-	"backend/internal/app"
+	"backend/internal/interfaces"
 	"backend/internal/service"
-	"time"
 
 	"github.com/danielgtaylor/huma/v2"
 	"go.uber.org/zap"
 )
 
 type Auth struct {
-	userService *service.User
-	authService *service.Auth
+	authService interfaces.AuthService
 	api         huma.API
 	logger      *zap.Logger
 }
@@ -19,15 +17,12 @@ type Auth struct {
 const UserJwtKey = "user"
 
 // NewAuth - создать новый обработчик для middleware
-func NewAuth(app *app.App) *Auth {
-	userService := service.NewUserService(app)
-	authService := service.NewAuthService(app, time.Hour)
+func NewAuth(authService *service.Auth, api huma.API, logger *zap.Logger) *Auth {
 
 	return &Auth{
-		userService: userService,
 		authService: authService,
-		api:         app.Api,
-		logger:      app.Logger,
+		api:         api,
+		logger:      logger,
 	}
 }
 
